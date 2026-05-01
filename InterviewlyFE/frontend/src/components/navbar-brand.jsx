@@ -1,4 +1,3 @@
-import micIcon from "../assets/mic-icon.svg";
 import { Link } from "react-router-dom";
 
 function NavbarBrand() {

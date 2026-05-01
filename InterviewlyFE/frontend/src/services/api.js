@@ -1,11 +1,15 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("token");
+  const isFormData = options.body instanceof FormData;
 
   const headers = {
-    "Content-Type": "application/json",
     ...(options.headers || {}),
   };
+
+  if (!isFormData && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -27,4 +31,12 @@ export async function apiRequest(path, options = {}) {
   }
 
   return responseData;
+}
+
+export async function startInterview(interviewId) {
+  const response = await apiRequest(`/interview/${interviewId}/start`, {
+    method: "GET",
+  });
+
+  return response?.firstQuestion ?? response?.question ?? response;
 }
