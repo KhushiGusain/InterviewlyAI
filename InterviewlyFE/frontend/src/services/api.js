@@ -40,3 +40,4 @@ export async function startInterview(interviewId) {
 
   return response?.firstQuestion ?? response?.question ?? response;
 }
+
