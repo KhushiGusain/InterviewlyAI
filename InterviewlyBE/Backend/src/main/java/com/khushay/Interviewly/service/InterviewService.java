@@ -1,6 +1,7 @@
 package com.khushay.Interviewly.service;
 
 import com.khushay.Interviewly.model.Interview;
+import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.Response;
 import com.khushay.Interviewly.model.User;
 import com.khushay.Interviewly.repository.InterviewRepository;
@@ -29,7 +30,7 @@ public class InterviewService {
 
     private final InterviewRepository interviewRepository;
     private final ResponseRepository responseRepository;
-    private final Map<UUID, List<String>> interviewStagesInMemory = new ConcurrentHashMap<>();
+    private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
 
     @Transactional
     public UUID createInterview(
@@ -71,7 +72,7 @@ public class InterviewService {
         interview.setFocusAreas(normalizedFocusAreas);
         interview.setResumePath(resumePath);
         interview.setStatus("CREATED");
-        interview.setCurrentStage("INTRO");
+        interview.setCurrentStage(InterviewStage.INTRO);
         interview.setQuestionIndex(0);
         interview.setCreatedAt(LocalDateTime.now());
 
@@ -85,7 +86,7 @@ public class InterviewService {
     public String startInterview(UUID interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
-        List<String> stages = interviewStagesInMemory.computeIfAbsent(
+        List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
                 id -> stagesForInterviewType(interview.getInterviewType())
         );
@@ -95,19 +96,36 @@ public class InterviewService {
         interview.setQuestionIndex(1);
 
         interviewRepository.save(interview);
-        return "Tell me about yourself";
+        return QuestionBank.getQuestion(
+                interview.getCurrentStage(),
+                interview.getQuestionIndex(),
+                interview.getRole(),
+                interview.getFocusAreas()
+        );
     }
 
     @Transactional
     public String submitAnswer(UUID interviewId, String answer) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
-        List<String> stages = interviewStagesInMemory.computeIfAbsent(
+        List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
                 id -> stagesForInterviewType(interview.getInterviewType())
         );
 
-        String currentQuestion = currentQuestionByIndex(interview.getQuestionIndex());
+        InterviewStage currentStage = interview.getCurrentStage();
+        if (currentStage == null) {
+            currentStage = stages.getFirst();
+            interview.setCurrentStage(currentStage);
+        }
+
+        int currentQuestionIndex = interview.getQuestionIndex() <= 0 ? 1 : interview.getQuestionIndex();
+        String currentQuestion = QuestionBank.getQuestion(
+                currentStage,
+                currentQuestionIndex,
+                interview.getRole(),
+                interview.getFocusAreas()
+        );
 
         Response response = new Response();
         response.setInterview(interview);
@@ -115,16 +133,23 @@ public class InterviewService {
         response.setAnswer(trimToNull(answer));
         responseRepository.save(response);
 
-        String nextQuestion = nextQuestionByIndex(interview.getQuestionIndex());
-        interview.setQuestionIndex(interview.getQuestionIndex() + 1);
-        interview.setCurrentStage(stageForQuestionIndex(interview.getQuestionIndex(), stages));
-        if ("END".equals(nextQuestion)) {
+        ProgressStep progress = nextStep(
+                currentStage,
+                currentQuestionIndex,
+                stages,
+                interview.getRole(),
+                interview.getFocusAreas()
+        );
+        interview.setCurrentStage(progress.stage());
+        interview.setQuestionIndex(progress.questionIndex());
+
+        if (InterviewStage.END.equals(progress.stage())) {
             interview.setStatus("COMPLETED");
             interviewStagesInMemory.remove(interviewId);
         }
         interviewRepository.save(interview);
 
-        return nextQuestion;
+        return progress.question();
     }
 
     private static String normalizeRequiredRole(String role) {
@@ -153,43 +178,43 @@ public class InterviewService {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private static String currentQuestionByIndex(int questionIndex) {
-        if (questionIndex == 1) {
-            return "Tell me about yourself";
-        }
-        if (questionIndex == 2) {
-            return "Explain a project you worked on";
-        }
-        return "What is OOP?";
-    }
-
-    private static String nextQuestionByIndex(int questionIndex) {
-        if (questionIndex == 1) {
-            return "Explain a project you worked on";
-        }
-        if (questionIndex == 2) {
-            return "What is OOP?";
-        }
-        return "END";
-    }
-
-    private static List<String> stagesForInterviewType(String interviewType) {
+    private static List<InterviewStage> stagesForInterviewType(String interviewType) {
         String normalizedType = interviewType == null ? "" : interviewType.trim().toUpperCase(Locale.ROOT);
         if ("TECHNICAL".equals(normalizedType)) {
-            return List.of("INTRO", "TECHNICAL");
+            return List.of(InterviewStage.INTRO, InterviewStage.TECHNICAL);
         }
         if ("BEHAVIORAL".equals(normalizedType)) {
-            return List.of("INTRO", "BEHAVIORAL");
+            return List.of(InterviewStage.INTRO, InterviewStage.BEHAVIORAL);
         }
-        return List.of("INTRO", "TECHNICAL", "BEHAVIORAL");
+        return List.of(InterviewStage.INTRO, InterviewStage.TECHNICAL, InterviewStage.BEHAVIORAL);
     }
 
-    private static String stageForQuestionIndex(int questionIndex, List<String> stages) {
-        if (questionIndex <= 1) {
-            return stages.getFirst();
+    private static ProgressStep nextStep(
+            InterviewStage currentStage,
+            int currentQuestionIndex,
+            List<InterviewStage> stages,
+            String role,
+            List<String> focusAreas
+    ) {
+        if (currentQuestionIndex < 2) {
+            int nextQuestionIndex = currentQuestionIndex + 1;
+            return new ProgressStep(
+                    QuestionBank.getQuestion(currentStage, nextQuestionIndex, role, focusAreas),
+                    currentStage,
+                    nextQuestionIndex
+            );
         }
-        int stageIdx = Math.min(questionIndex - 1, stages.size() - 1);
-        return stages.get(stageIdx);
+
+        int stageIndex = stages.indexOf(currentStage);
+        if (stageIndex >= 0 && stageIndex < stages.size() - 1) {
+            InterviewStage nextStage = stages.get(stageIndex + 1);
+            // Reset question index when moving to a new stage.
+            return new ProgressStep(QuestionBank.getQuestion(nextStage, 1, role, focusAreas), nextStage, 1);
+        }
+
+        return new ProgressStep("END", InterviewStage.END, currentQuestionIndex + 1);
     }
+
+    private record ProgressStep(String question, InterviewStage stage, int questionIndex) {}
 
 }
