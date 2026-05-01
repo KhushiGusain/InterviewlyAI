@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khushay.Interviewly.dto.InterviewAnswerRequest;
 import com.khushay.Interviewly.dto.InterviewCreatedResponse;
+import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.User;
 import com.khushay.Interviewly.repository.UserRepository;
 import com.khushay.Interviewly.service.InterviewService;
@@ -80,6 +81,9 @@ public class InterviewController {
             @RequestBody InterviewAnswerRequest request
     ) {
         InterviewService.AnswerResponse next = interviewService.submitAnswer(interviewId, request.getAnswer());
+        if (InterviewStage.END.equals(next.stage())) {
+            return ResponseEntity.ok(Map.of("status", "COMPLETED"));
+        }
         return ResponseEntity.ok(Map.of("question", next.question(), "stage", next.stage().name()));
     }
 

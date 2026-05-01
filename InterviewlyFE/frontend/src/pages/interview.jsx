@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
 
 function InterviewPage() {
   const { id: interviewId } = useParams();
+  const navigate = useNavigate();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState("INTRO");
+  const [answeredCount, setAnsweredCount] = useState(0);
 
   function getStageLabel(stageValue) {
     const normalized = String(stageValue || "").toUpperCase();
@@ -65,6 +67,26 @@ function InterviewPage() {
       setQuestion(response?.question || "");
       setStage(response?.stage || response?.round || stage);
       setAnswer("");
+      const nextCount = answeredCount + 1;
+      setAnsweredCount(nextCount);
+
+      if (response?.status === "COMPLETED") {
+        navigate(`/reports/${interviewId}`, {
+          replace: true,
+          state: {
+            totalQuestionsAnswered:
+              response?.totalQuestionsAnswered ??
+              response?.summary?.totalQuestionsAnswered ??
+              response?.questionsAnswered ??
+              nextCount,
+            role: response?.role ?? response?.summary?.role ?? "Not available",
+            interviewType:
+              response?.interviewType ??
+              response?.summary?.interviewType ??
+              "Not available",
+          },
+        });
+      }
     } finally {
       setLoading(false);
     }
