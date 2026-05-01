@@ -79,8 +79,8 @@ public class InterviewController {
             @PathVariable("id") UUID interviewId,
             @RequestBody InterviewAnswerRequest request
     ) {
-        String nextQuestion = interviewService.submitAnswer(interviewId, request.getAnswer());
-        return ResponseEntity.ok(Map.of("question", nextQuestion));
+        InterviewService.AnswerResponse next = interviewService.submitAnswer(interviewId, request.getAnswer());
+        return ResponseEntity.ok(Map.of("question", next.question(), "stage", next.stage().name()));
     }
 
     private List<String> parseFocusAreas(String focusAreasJson) {

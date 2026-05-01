@@ -7,6 +7,14 @@ function InterviewPage() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState("INTRO");
+
+  function getStageLabel(stageValue) {
+    const normalized = String(stageValue || "").toUpperCase();
+    if (normalized.includes("TECH")) return "Technical Round";
+    if (normalized.includes("BEHAV")) return "Behavioral Round";
+    return "Intro Round";
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -19,10 +27,12 @@ function InterviewPage() {
         });
         if (isMounted) {
           setQuestion(response?.question || "");
+          setStage(response?.stage || response?.round || "INTRO");
         }
       } catch {
         if (isMounted) {
           setQuestion("");
+          setStage("INTRO");
         }
       } finally {
         if (isMounted) {
@@ -53,6 +63,7 @@ function InterviewPage() {
       });
 
       setQuestion(response?.question || "");
+      setStage(response?.stage || response?.round || stage);
       setAnswer("");
     } finally {
       setLoading(false);
@@ -65,6 +76,9 @@ function InterviewPage() {
         <h1 className="text-2xl font-semibold">Interview Session</h1>
         <p className="mt-2 text-sm text-[#9fb1d3]">
           Interview ID: <span className="font-medium text-[#dce6ff]">{interviewId}</span>
+        </p>
+        <p className="mt-2 inline-flex rounded-full border border-[rgba(145,172,255,0.22)] bg-[rgba(7,13,30,0.55)] px-3 py-1 text-xs font-medium text-[#b8cdf2]">
+          {getStageLabel(stage)}
         </p>
 
         <section className="mt-6 rounded-xl border border-[rgba(145,172,255,0.18)] bg-[rgba(7,13,30,0.55)] p-4">

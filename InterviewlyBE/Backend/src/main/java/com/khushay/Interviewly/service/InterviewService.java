@@ -105,7 +105,7 @@ public class InterviewService {
     }
 
     @Transactional
-    public String submitAnswer(UUID interviewId, String answer) {
+    public AnswerResponse submitAnswer(UUID interviewId, String answer) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
@@ -149,7 +149,7 @@ public class InterviewService {
         }
         interviewRepository.save(interview);
 
-        return progress.question();
+        return new AnswerResponse(progress.question(), progress.stage());
     }
 
     private static String normalizeRequiredRole(String role) {
@@ -216,5 +216,7 @@ public class InterviewService {
     }
 
     private record ProgressStep(String question, InterviewStage stage, int questionIndex) {}
+
+    public record AnswerResponse(String question, InterviewStage stage) {}
 
 }
