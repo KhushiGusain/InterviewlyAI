@@ -17,7 +17,10 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +29,7 @@ public class InterviewService {
 
     private final InterviewRepository interviewRepository;
     private final ResponseRepository responseRepository;
+    private final Map<UUID, List<String>> interviewStagesInMemory = new ConcurrentHashMap<>();
 
     @Transactional
     public UUID createInterview(
@@ -72,6 +76,7 @@ public class InterviewService {
         interview.setCreatedAt(LocalDateTime.now());
 
         interviewRepository.save(interview);
+        interviewStagesInMemory.put(interview.getId(), stagesForInterviewType(normalizedInterviewType));
 
         return interview.getId();
     }
@@ -80,9 +85,13 @@ public class InterviewService {
     public String startInterview(UUID interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
+        List<String> stages = interviewStagesInMemory.computeIfAbsent(
+                interviewId,
+                id -> stagesForInterviewType(interview.getInterviewType())
+        );
 
         interview.setStatus("IN_PROGRESS");
-        interview.setCurrentStage("INTRO");
+        interview.setCurrentStage(stages.getFirst());
         interview.setQuestionIndex(1);
 
         interviewRepository.save(interview);
@@ -93,6 +102,10 @@ public class InterviewService {
     public String submitAnswer(UUID interviewId, String answer) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
+        List<String> stages = interviewStagesInMemory.computeIfAbsent(
+                interviewId,
+                id -> stagesForInterviewType(interview.getInterviewType())
+        );
 
         String currentQuestion = currentQuestionByIndex(interview.getQuestionIndex());
 
@@ -104,8 +117,10 @@ public class InterviewService {
 
         String nextQuestion = nextQuestionByIndex(interview.getQuestionIndex());
         interview.setQuestionIndex(interview.getQuestionIndex() + 1);
+        interview.setCurrentStage(stageForQuestionIndex(interview.getQuestionIndex(), stages));
         if ("END".equals(nextQuestion)) {
             interview.setStatus("COMPLETED");
+            interviewStagesInMemory.remove(interviewId);
         }
         interviewRepository.save(interview);
 
@@ -156,6 +171,25 @@ public class InterviewService {
             return "What is OOP?";
         }
         return "END";
+    }
+
+    private static List<String> stagesForInterviewType(String interviewType) {
+        String normalizedType = interviewType == null ? "" : interviewType.trim().toUpperCase(Locale.ROOT);
+        if ("TECHNICAL".equals(normalizedType)) {
+            return List.of("INTRO", "TECHNICAL");
+        }
+        if ("BEHAVIORAL".equals(normalizedType)) {
+            return List.of("INTRO", "BEHAVIORAL");
+        }
+        return List.of("INTRO", "TECHNICAL", "BEHAVIORAL");
+    }
+
+    private static String stageForQuestionIndex(int questionIndex, List<String> stages) {
+        if (questionIndex <= 1) {
+            return stages.getFirst();
+        }
+        int stageIdx = Math.min(questionIndex - 1, stages.size() - 1);
+        return stages.get(stageIdx);
     }
 
 }
