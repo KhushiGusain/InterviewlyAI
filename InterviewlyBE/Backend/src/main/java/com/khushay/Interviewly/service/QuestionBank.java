@@ -42,11 +42,20 @@ public final class QuestionBank {
 
     private static String technicalQuestion(int questionIndex, String role, List<String> focusAreas) {
         String safeRole = role == null || role.isBlank() ? "this role" : role;
-        String primaryFocus = (focusAreas == null || focusAreas.isEmpty()) ? "your strongest technical area" : focusAreas.getFirst();
+        String currentFocus = focusAreaForQuestion(questionIndex, focusAreas);
 
         if (questionIndex <= 1) {
-            return "For the " + safeRole + " role, explain a project where you applied " + primaryFocus + ".";
+            return "For the " + safeRole + " role, explain a project where you applied " + currentFocus + ".";
         }
-        return "What are the key trade-offs and complexity considerations in " + primaryFocus + "?";
+        return "What are the key trade-offs and complexity considerations in " + currentFocus + "?";
+    }
+
+    private static String focusAreaForQuestion(int questionIndex, List<String> focusAreas) {
+        if (focusAreas == null || focusAreas.isEmpty()) {
+            return "your strongest technical area";
+        }
+        int safeQuestionIndex = Math.max(1, questionIndex);
+        int idx = (safeQuestionIndex - 1) % focusAreas.size();
+        return focusAreas.get(idx);
     }
 }
