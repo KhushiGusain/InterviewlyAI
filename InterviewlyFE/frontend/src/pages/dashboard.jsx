@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../services/api";
 
@@ -180,6 +180,7 @@ function StatusBadge({ status }) {
 function DashboardPage() {
   const navigate = useNavigate();
   const resumeInputRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const [formData, setFormData] = useState({
     role: "",
     company: "",
@@ -193,6 +194,15 @@ function DashboardPage() {
   const [resumeFileName, setResumeFileName] = useState("");
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeError, setResumeError] = useState("");
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [displayName, setDisplayName] = useState("User");
+
+  useEffect(() => {
+    const storedName = localStorage.getItem("userName");
+    if (storedName?.trim()) {
+      setDisplayName(storedName.trim());
+    }
+  }, []);
 
   function handleChange(eventOrName, value) {
     if (typeof eventOrName === "string") {
@@ -246,6 +256,28 @@ function DashboardPage() {
 
     setResumeFileName(file.name);
     setResumeFile(file);
+  }
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+
+    if (isProfileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isProfileMenuOpen]);
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    navigate("/login", { replace: true });
   }
 
   async function handleSubmit() {
@@ -307,23 +339,41 @@ function DashboardPage() {
           <span className="text-[1.6rem] font-semibold tracking-tight text-[#f4f7ff]">
             Interviewly<span className="text-[#4e8dff]">AI</span>
           </span>
-          <button className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(145,172,255,0.2)] bg-[rgba(16,24,46,0.55)] px-3 py-2 backdrop-blur-md transition hover:border-[rgba(145,172,255,0.35)]">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#4e8dff] to-[#7c3aed] text-sm font-bold text-white">
-              K
-            </div>
-            <div className="text-left leading-tight">
-              <p className="text-sm font-medium text-[#f4f7ff]">Khushay</p>
-              <p className="text-[11px] text-[#8fa3c8]">Free Plan</p>
-            </div>
-            <ChevronDownIcon />
-          </button>
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(145,172,255,0.2)] bg-[rgba(16,24,46,0.55)] px-3 py-2 backdrop-blur-md transition hover:border-[rgba(145,172,255,0.35)]"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#4e8dff] to-[#7c3aed] text-sm font-bold text-white">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="text-left leading-tight">
+                <p className="text-sm font-medium text-[#f4f7ff]">{displayName}</p>
+                <p className="text-[11px] text-[#8fa3c8]">Free Plan</p>
+              </div>
+              <ChevronDownIcon />
+            </button>
+
+            {isProfileMenuOpen ? (
+              <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-[rgba(145,172,255,0.22)] bg-[rgba(10,17,35,0.96)] p-1.5 shadow-[0_14px_28px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-[#f4f7ff] transition hover:bg-[rgba(145,172,255,0.12)]"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : null}
+          </div>
         </nav>
 
         {/* Header Banner */}
         <div className="relative mx-8 mb-6 overflow-hidden rounded-2xl border border-[rgba(145,172,255,0.15)] bg-[rgba(10,18,45,0.6)] px-8 py-4 backdrop-blur-md">
           <div className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 h-[140px] w-[140px] rounded-full opacity-95"
             style={{ background: "radial-gradient(circle at 35% 35%, #4db3ff 0%, #275cff 65%, transparent 100%)" }} />
-          <h1 className="mb-1 text-3xl font-bold text-[#f4f7ff]">Good to see you, Khushay!</h1>
+          <h1 className="mb-1 text-3xl font-bold text-[#f4f7ff]">Good to see you, {displayName}!</h1>
           <p className="text-sm text-[#8fa3c8]">Let&apos;s ace your next interview.</p>
         </div>
 

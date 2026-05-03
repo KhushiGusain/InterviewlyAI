@@ -31,6 +31,9 @@ function LoginPage() {
       });
 
       localStorage.setItem("token", response.token);
+      if (response?.name) {
+        localStorage.setItem("userName", response.name);
+      }
       navigate("/");
     } catch (submitError) {
       setError(submitError.message || "Login failed.");
@@ -112,9 +115,22 @@ function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-1 h-[46px] cursor-pointer rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] font-bold tracking-[0.02em] text-[#f5f7ff] transition hover:brightness-105"
+                className="mt-1 flex h-[46px] w-full items-center justify-center rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] font-bold tracking-[0.02em] text-[#f5f7ff] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-80"
               >
-                {loading ? "LOGGING IN..." : "LOGIN"}
+                {loading ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <circle cx="12" cy="12" r="9" className="opacity-30" />
+                    <path d="M21 12a9 9 0 0 0-9-9" className="opacity-100" />
+                  </svg>
+                ) : (
+                  "LOGIN"
+                )}
               </button>
             </form>
 

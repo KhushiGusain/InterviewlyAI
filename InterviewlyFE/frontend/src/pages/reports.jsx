@@ -34,7 +34,7 @@ function ReportsPage() {
         <button
           type="button"
           onClick={() => navigate("/dashboard")}
-          className="mt-6 h-11 rounded-xl bg-linear-to-r from-[#2f80ff] to-[#5b33ff] px-5 text-sm font-semibold text-white transition hover:brightness-110"
+          className="mt-6 h-11 cursor-pointer rounded-xl bg-linear-to-r from-[#2f80ff] to-[#5b33ff] px-5 text-sm font-semibold text-white transition hover:brightness-110"
         >
           Back to Dashboard
         </button>

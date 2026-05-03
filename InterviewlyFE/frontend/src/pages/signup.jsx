@@ -4,28 +4,27 @@ import emailIcon from "../assets/email-icon.svg";
 import lockIcon from "../assets/lock-icon.svg";
 import openEyeIcon from "../assets/open-eye-icon.svg";
 import closeEyeIcon from "../assets/close-eye-icon.svg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LandingHeroPanel from "../components/landing-hero-panel";
 import NavbarBrand from "../components/navbar-brand";
 import { apiRequest } from "../services/api";
 
 function SignupPage() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   async function handleSignupSubmit(event) {
     event.preventDefault();
     setError("");
-    setSuccessMessage("");
     setLoading(true);
 
     try {
-      await apiRequest("/auth/signup", {
+      const signupResponse = await apiRequest("/auth/signup", {
         method: "POST",
         body: JSON.stringify({
           name,
@@ -34,10 +33,28 @@ function SignupPage() {
         }),
       });
 
-      setSuccessMessage("Signup successful. Please login.");
-      setName("");
-      setEmail("");
-      setPassword("");
+      if (signupResponse?.token) {
+        localStorage.setItem("token", signupResponse.token);
+        if (signupResponse?.name) {
+          localStorage.setItem("userName", signupResponse.name);
+        }
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+
+      const loginResponse = await apiRequest("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      localStorage.setItem("token", loginResponse.token);
+      if (loginResponse?.name) {
+        localStorage.setItem("userName", loginResponse.name);
+      }
+      navigate("/dashboard", { replace: true });
     } catch (submitError) {
       setError(submitError.message || "Signup failed.");
     } finally {
@@ -136,19 +153,28 @@ function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 h-[46px] cursor-pointer rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] font-bold tracking-[0.02em] text-[#f5f7ff] transition hover:brightness-105"
+              className="mt-1 flex h-[46px] w-full items-center justify-center rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] font-bold tracking-[0.02em] text-[#f5f7ff] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-80"
             >
-              {loading ? "CREATING..." : "CREATE ACCOUNT"}
+              {loading ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5 animate-spin"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <circle cx="12" cy="12" r="9" className="opacity-30" />
+                  <path d="M21 12a9 9 0 0 0-9-9" className="opacity-100" />
+                </svg>
+              ) : (
+                "CREATE ACCOUNT"
+              )}
             </button>
           </form>
 
           {error ? (
             <p className="mt-3 text-sm text-[#ff9ca6]">{error}</p>
           ) : null}
-          {successMessage ? (
-            <p className="mt-3 text-sm text-[#8ce4a3]">{successMessage}</p>
-          ) : null}
-
           <div className="my-4 flex items-center gap-3">
             <span className="h-px flex-1 bg-[rgba(154,170,214,0.25)]" />
             <span className="text-xs text-[#9ea8c7]">OR</span>

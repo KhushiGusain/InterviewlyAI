@@ -5,20 +5,74 @@ import LoginPage from "./pages/login";
 import ReportsPage from "./pages/reports";
 import SignupPage from "./pages/signup";
 
+function isAuthenticated() {
+  return Boolean(localStorage.getItem("token"));
+}
+
 function RootRedirect() {
-  const token = localStorage.getItem("token");
-  return <Navigate to={token ? "/dashboard" : "/dashboard"} replace />;
+  return <Navigate to={isAuthenticated() ? "/dashboard" : "/login"} replace />;
+}
+
+function ProtectedRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function PublicOnlyRoute({ children }) {
+  if (isAuthenticated()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
 }
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<RootRedirect />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/interview/:id" element={<InterviewPage />} />
-      <Route path="/reports/:id" element={<ReportsPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/dashboard"
+        element={(
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/interview/:id"
+        element={(
+          <ProtectedRoute>
+            <InterviewPage />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/reports/:id"
+        element={(
+          <ProtectedRoute>
+            <ReportsPage />
+          </ProtectedRoute>
+        )}
+      />
+      <Route path="/interview" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/signup"
+        element={(
+          <PublicOnlyRoute>
+            <SignupPage />
+          </PublicOnlyRoute>
+        )}
+      />
+      <Route
+        path="/login"
+        element={(
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        )}
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
