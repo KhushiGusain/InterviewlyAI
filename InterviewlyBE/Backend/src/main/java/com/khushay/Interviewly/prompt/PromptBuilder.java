@@ -1,6 +1,8 @@
 package com.khushay.Interviewly.prompt;
 
+import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
+import com.khushay.Interviewly.model.User;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,6 +11,31 @@ import org.springframework.util.StringUtils;
 
 @Component
 public class PromptBuilder {
+
+    /**
+     * Builds the question prompt using interview state, including {@link Interview#getResumeSummary()} when set
+     * (populated when the interview starts).
+     */
+    public String buildQuestionPrompt(
+            Interview interview,
+            User candidate,
+            InterviewStage stage,
+            String previousQuestion,
+            String previousAnswer) {
+        List<String> areas = interview.getFocusAreas() != null ? interview.getFocusAreas() : List.of();
+        String summary = interview.getResumeSummary() != null ? interview.getResumeSummary() : "";
+        return buildQuestionPrompt(
+                candidate.getName(),
+                interview.getRole(),
+                interview.getCompany(),
+                interview.getJobDescription(),
+                stage,
+                areas,
+                interview.getDifficulty(),
+                summary,
+                previousQuestion,
+                previousAnswer);
+    }
 
     /**
      * Builds the full instruction prompt for generating the next interview question.

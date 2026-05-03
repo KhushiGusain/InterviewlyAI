@@ -55,6 +55,10 @@ public class Interview {
 
     private String resumePath;
 
+    /** OpenAI-generated resume summary; populated once (at creation or first start) and reused for prompts. */
+    @Column(columnDefinition = "TEXT")
+    private String resumeSummary;
+
     private String status;
 
     @Enumerated(EnumType.STRING)

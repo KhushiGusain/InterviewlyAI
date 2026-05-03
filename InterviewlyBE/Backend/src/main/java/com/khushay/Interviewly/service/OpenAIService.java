@@ -16,8 +16,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class OpenAIService {
 
     private static final String MODEL = "gpt-4o-mini";
-    private static final double TEMPERATURE = 0.7;
-    private static final int MAX_TOKENS = 80;
+    private static final double DEFAULT_TEMPERATURE = 0.7;
+    private static final int QUESTION_MAX_TOKENS = 80;
+    private static final int TEXT_RESPONSE_MAX_TOKENS = 400;
 
     private final WebClient webClient;
     private final String apiKey;
@@ -33,6 +34,17 @@ public class OpenAIService {
     }
 
     public String generateQuestion(String prompt) {
+        return chatCompletion(prompt, QUESTION_MAX_TOKENS, DEFAULT_TEMPERATURE);
+    }
+
+    /**
+     * Single user-message chat completion; suitable for summaries and other non-interview prompts.
+     */
+    public String generateTextResponse(String prompt) {
+        return chatCompletion(prompt, TEXT_RESPONSE_MAX_TOKENS, DEFAULT_TEMPERATURE);
+    }
+
+    private String chatCompletion(String userMessage, int maxTokens, double temperature) {
         if (!StringUtils.hasText(apiKey)) {
             throw new IllegalStateException("openai.api.key is not configured");
         }
@@ -42,9 +54,9 @@ public class OpenAIService {
 
         Map<String, Object> body = Map.of(
                 "model", MODEL,
-                "messages", List.of(Map.of("role", "user", "content", prompt)),
-                "temperature", TEMPERATURE,
-                "max_tokens", MAX_TOKENS);
+                "messages", List.of(Map.of("role", "user", "content", userMessage)),
+                "temperature", temperature,
+                "max_tokens", maxTokens);
 
         JsonNode root;
         try {

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,6 +31,8 @@ public class InterviewService {
 
     private final InterviewRepository interviewRepository;
     private final ResponseRepository responseRepository;
+    private final ResumeParser resumeParser;
+    private final ResumeSummarizer resumeSummarizer;
     private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
 
     @Transactional
@@ -76,6 +79,8 @@ public class InterviewService {
         interview.setQuestionIndex(0);
         interview.setCreatedAt(LocalDateTime.now());
 
+        ensureResumeSummaryGeneratedOnce(interview);
+
         interviewRepository.save(interview);
         interviewStagesInMemory.put(interview.getId(), stagesForInterviewType(normalizedInterviewType));
 
@@ -90,6 +95,8 @@ public class InterviewService {
                 interviewId,
                 id -> stagesForInterviewType(interview.getInterviewType())
         );
+
+        ensureResumeSummaryGeneratedOnce(interview);
 
         interview.setStatus("IN_PROGRESS");
         interview.setCurrentStage(stages.getFirst());
@@ -150,6 +157,22 @@ public class InterviewService {
         interviewRepository.save(interview);
 
         return new AnswerResponse(progress.question(), progress.stage());
+    }
+
+    /**
+     * Parses the stored PDF and calls OpenAI once to set {@link Interview#getResumeSummary()}. Skips if a value
+     * was already persisted ({@code null} means never generated; empty string means generated but no usable text).
+     */
+    private void ensureResumeSummaryGeneratedOnce(Interview interview) {
+        if (interview.getResumeSummary() != null) {
+            return;
+        }
+        String rawText = resumeParser.extractTextFromStoredPdf(interview.getResumePath());
+        String summary = "";
+        if (StringUtils.hasText(rawText)) {
+            summary = resumeSummarizer.summarizeResume(rawText);
+        }
+        interview.setResumeSummary(summary);
     }
 
     private static String normalizeRequiredRole(String role) {
