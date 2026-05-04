@@ -65,8 +65,30 @@ public class Interview {
     @Column(nullable = false)
     private InterviewStage currentStage;
 
+    /**
+     * Number of <strong>base</strong> questions issued in {@link #currentStage} only (follow-ups do not increment).
+     * Stage advances when the next question would be a new base and this value is already at the stage max.
+     */
     @Column(nullable = false)
     private int questionIndex;
+
+    /** Last question text returned to the candidate (for the next answer pairing and prompt follow-up). */
+    @Column(columnDefinition = "TEXT")
+    private String lastQuestionText;
+
+    /**
+     * Follow-up questions issued in the current stage (max 2 per stage). Reset with {@link #questionIndex} when the
+     * stage changes.
+     */
+    @Column(nullable = false)
+    private int followUpsUsedInStage;
+
+    /**
+     * Follow-ups issued for the current base (0 or 1). Reset to 0 when a new base question is issued or when the
+     * stage changes.
+     */
+    @Column(nullable = false)
+    private int followUpsIssuedForCurrentBase;
 
     private LocalDateTime createdAt;
 

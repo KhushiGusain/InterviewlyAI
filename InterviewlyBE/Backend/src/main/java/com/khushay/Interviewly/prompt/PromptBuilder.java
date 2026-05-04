@@ -13,49 +13,54 @@ import org.springframework.util.StringUtils;
 public class PromptBuilder {
 
     /**
-     * Builds the question prompt using interview state, including {@link Interview#getResumeSummary()} when set
-     * (populated when the interview starts).
+     * Convenience overload: pulls fields from {@code interview} and {@code candidate}.
+     *
+     * @param previousQuestion last question shown (anti-repeat); may be null on first question
      */
     public String buildQuestionPrompt(
             Interview interview,
             User candidate,
             InterviewStage stage,
             String previousQuestion,
-            String previousAnswer) {
+            String previousAnswer,
+            boolean isFollowUp) {
         List<String> areas = interview.getFocusAreas() != null ? interview.getFocusAreas() : List.of();
         String summary = interview.getResumeSummary() != null ? interview.getResumeSummary() : "";
         return buildQuestionPrompt(
-                candidate.getName(),
+                stage,
                 interview.getRole(),
                 interview.getCompany(),
                 interview.getJobDescription(),
-                stage,
                 areas,
                 interview.getDifficulty(),
                 summary,
+                previousAnswer,
+                candidate.getName(),
                 previousQuestion,
-                previousAnswer);
+                isFollowUp);
     }
 
     /**
-     * Builds the full instruction prompt for generating the next interview question.
+     * Builds the full instruction prompt for OpenAI question generation.
      *
      * @param previousQuestion last question asked (optional); used to avoid repetition
-     * @param previousAnswer candidate's last answer (optional); used for natural follow-ups
+     * @param isFollowUp when true, the model must emit a follow-up to {@code previousAnswer}; otherwise a new base
+     *     question
      */
     public String buildQuestionPrompt(
-            String candidateName,
+            InterviewStage stage,
             String role,
             String company,
             String jobDescription,
-            InterviewStage stage,
             List<String> focusAreas,
             String difficulty,
             String resumeSummary,
+            String previousAnswer,
+            String userName,
             String previousQuestion,
-            String previousAnswer) {
+            boolean isFollowUp) {
 
-        String name = blankToPlaceholder(candidateName, "the candidate");
+        String name = blankToPlaceholder(userName, "the candidate");
         String roleLine = StringUtils.hasText(role) ? role.trim() : "(not specified)";
         String companyLine = StringUtils.hasText(company) ? company.trim() : null;
         String jdLine = StringUtils.hasText(jobDescription) ? jobDescription.trim() : null;
@@ -131,13 +136,20 @@ public class PromptBuilder {
             sb.append("No focus areas listed: derive topics from role, job description (if any), and resume summary.\n\n");
         }
 
-        sb.append("5. FOLLOW-UP LOGIC (ADVANCED)\n\n");
-        if (StringUtils.hasText(previousAnswer)) {
-            sb.append("A previous answer exists. Briefly infer technologies (e.g. MongoDB, React), concepts (e.g. optimization, hashing), ");
-            sb.append("and decisions (\"I chose X because...\") from that answer, then ask ONE deeper or related follow-up that feels natural, not forced.\n");
-            sb.append("Examples: MongoDB → indexing, consistency, or scaling; \"optimized\" → how and why; \"hash map\" → complexity or alternatives.\n\n");
+        sb.append("5. QUESTION INTENT (STRICT)\n\n");
+        if (isFollowUp) {
+            sb.append("This turn is a FOLLOW-UP ONLY to the candidate's last answer (below).\n");
+            sb.append("- Ask EXACTLY ONE concise follow-up that goes deeper on what they said (technology, trade-off, decision, or detail).\n");
+            sb.append("- Do NOT ask a brand-new unrelated interview topic; stay anchored to their answer.\n");
+            sb.append("- Natural tone, not interrogative; no preamble.\n\n");
         } else {
-            sb.append("No previous answer: do not fabricate a follow-up to a missing answer; open with an appropriate stage-aligned question.\n\n");
+            sb.append("This turn is a NEW BASE question for this stage (not a narrow drill-down follow-up only).\n");
+            sb.append("- Open a fresh line of inquiry appropriate to the stage; you may lightly reference prior context but do not ");
+            sb.append("replace a proper base question with a tiny follow-up.\n");
+            if (StringUtils.hasText(previousAnswer)) {
+                sb.append("- A prior answer exists only as background; do not ask a follow-up-style probe as the whole question.\n");
+            }
+            sb.append("\n");
         }
 
         sb.append("6. OUTPUT RULES\n\n");
