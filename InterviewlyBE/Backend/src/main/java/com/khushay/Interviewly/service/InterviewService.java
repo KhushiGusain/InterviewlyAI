@@ -83,13 +83,14 @@ public class InterviewService {
         interview.setJobDescription(normalizedJobDescription);
         interview.setFocusAreas(normalizedFocusAreas);
         interview.setResumePath(resumePath);
-        interview.setStatus("CREATED");
+        interview.setStatus("NOT_STARTED");
         interview.setCurrentStage(InterviewStage.INTRO);
         interview.setQuestionIndex(0);
         interview.setLastQuestionText(null);
         interview.setFollowUpsUsedInStage(0);
         interview.setFollowUpsIssuedForCurrentBase(0);
         interview.setCreatedAt(LocalDateTime.now());
+        interview.setCompletedAt(null);
 
         ensureResumeSummaryGeneratedOnce(interview);
 
@@ -100,9 +101,30 @@ public class InterviewService {
     }
 
     @Transactional
-    public String startInterview(UUID interviewId) {
+    public StartInterviewResponse startInterview(UUID interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
+
+        if ("COMPLETED".equals(interview.getStatus())) {
+            return new StartInterviewResponse("COMPLETED", null, "/reports/" + interviewId);
+        }
+
+        if ("IN_PROGRESS".equals(interview.getStatus())) {
+            String lastQuestion = interview.getLastQuestionText();
+            if (!StringUtils.hasText(lastQuestion)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Interview is in progress but no question is available");
+            }
+            return new StartInterviewResponse("IN_PROGRESS", lastQuestion, null);
+        }
+
+        if (!"NOT_STARTED".equals(interview.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Interview can only be started from NOT_STARTED state");
+        }
+
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
                 id -> STAGES
@@ -115,13 +137,14 @@ public class InterviewService {
         interview.setQuestionIndex(0);
         interview.setFollowUpsUsedInStage(0);
         interview.setFollowUpsIssuedForCurrentBase(0);
+        interview.setCompletedAt(null);
 
         String question = generateAiQuestion(interview, null, null, false);
         interview.setLastQuestionText(question);
         interview.setQuestionIndex(1);
 
         interviewRepository.save(interview);
-        return question;
+        return new StartInterviewResponse("IN_PROGRESS", question, null);
     }
 
     @Transactional
@@ -173,6 +196,7 @@ public class InterviewService {
                 if (InterviewStage.END.equals(nextStage)) {
                     interview.setCurrentStage(InterviewStage.END);
                     interview.setStatus("COMPLETED");
+                    interview.setCompletedAt(LocalDateTime.now());
                     interview.setLastQuestionText(null);
                     interview.setQuestionIndex(0);
                     interview.setFollowUpsUsedInStage(0);
@@ -194,6 +218,7 @@ public class InterviewService {
             }
             interview.setCurrentStage(InterviewStage.END);
             interview.setStatus("COMPLETED");
+            interview.setCompletedAt(LocalDateTime.now());
             interview.setLastQuestionText(null);
             interview.setQuestionIndex(0);
             interview.setFollowUpsUsedInStage(0);
@@ -363,5 +388,6 @@ public class InterviewService {
     }
 
     public record AnswerResponse(String question, InterviewStage stage) {}
+    public record StartInterviewResponse(String status, String question, String redirect) {}
 
 }

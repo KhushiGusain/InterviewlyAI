@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface InterviewRepository extends JpaRepository<Interview, UUID> {
 
     List<Interview> findByUser(User user);
+
+    List<Interview> findByUserId(Long userId);
 }

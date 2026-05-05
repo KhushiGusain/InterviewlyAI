@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -67,8 +68,16 @@ public class InterviewController {
 
     @PostMapping("/interview/{id}/start")
     public ResponseEntity<Map<String, String>> startInterview(@PathVariable("id") UUID interviewId) {
-        String question = interviewService.startInterview(interviewId);
-        return ResponseEntity.ok(Map.of("question", question));
+        InterviewService.StartInterviewResponse start = interviewService.startInterview(interviewId);
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("status", start.status());
+        if (start.question() != null) {
+            body.put("question", start.question());
+        }
+        if (start.redirect() != null) {
+            body.put("redirect", start.redirect());
+        }
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/interview/{id}/answer")

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,4 +17,6 @@ public interface ResponseRepository extends JpaRepository<Response, UUID> {
     List<String> findRecentQuestions(@Param("interviewId") UUID interviewId, Pageable pageable);
 
     List<Response> findByInterviewIdOrderByCreatedAtAsc(UUID interviewId);
+
+    List<Response> findByInterviewIdIn(Collection<UUID> interviewIds);
 }

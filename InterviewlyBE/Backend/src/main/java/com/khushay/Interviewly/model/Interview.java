@@ -94,6 +94,8 @@ public class Interview {
 
     private LocalDateTime createdAt;
 
+    private LocalDateTime completedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
