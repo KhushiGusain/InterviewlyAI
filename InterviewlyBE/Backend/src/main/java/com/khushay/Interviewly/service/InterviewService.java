@@ -1,6 +1,5 @@
 package com.khushay.Interviewly.service;
 
-import com.khushay.Interviewly.dto.EvaluationResult;
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.Response;
@@ -101,12 +100,6 @@ public class InterviewService {
     public String startInterview(UUID interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
-
-        // Idempotency guard: duplicate /start calls must return the same first question.
-        if ("IN_PROGRESS".equals(interview.getStatus()) && StringUtils.hasText(interview.getLastQuestionText())) {
-            return interview.getLastQuestionText();
-        }
-
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
                 id -> stagesForInterviewType(interview.getInterviewType())
@@ -159,9 +152,8 @@ public class InterviewService {
         response.setQuestion(previousQuestion);
         response.setAnswer(trimmedAnswer);
         responseRepository.save(response);
-        EvaluationResult evaluationResult = EvaluationService.FALLBACK_RESULT;
         try {
-            evaluationResult = evaluationService.evaluateAndSave(response, interview);
+            evaluationService.evaluateAndSave(response, interview);
         } catch (Exception ex) {
             // Evaluation is best-effort and must never block the interview flow.
             log.warn("Evaluation failed for response {}; continuing interview flow", response.getId(), ex);
@@ -190,11 +182,7 @@ public class InterviewService {
                 interview.setQuestionIndex(1);
 
                 interviewRepository.save(interview);
-                return new AnswerResponse(
-                        firstOfNextStage, nextStage,
-                        evaluationResult.getScore(),
-                        evaluationResult.getStrengths(),
-                        evaluationResult.getImprovements());
+                return new AnswerResponse(firstOfNextStage, nextStage);
             }
             interview.setCurrentStage(InterviewStage.END);
             interview.setStatus("COMPLETED");
@@ -204,11 +192,7 @@ public class InterviewService {
             interview.setFollowUpsIssuedForCurrentBase(0);
             interviewStagesInMemory.remove(interviewId);
             interviewRepository.save(interview);
-            return new AnswerResponse(
-                    "END", InterviewStage.END,
-                    evaluationResult.getScore(),
-                    evaluationResult.getStrengths(),
-                    evaluationResult.getImprovements());
+            return new AnswerResponse("END", InterviewStage.END);
         }
 
         String nextQuestion = generateAiQuestion(interview, previousQuestion, trimmedAnswer, nextIsFollowUp);
@@ -225,11 +209,7 @@ public class InterviewService {
         }
 
         interviewRepository.save(interview);
-        return new AnswerResponse(
-                nextQuestion, interview.getCurrentStage(),
-                evaluationResult.getScore(),
-                evaluationResult.getStrengths(),
-                evaluationResult.getImprovements());
+        return new AnswerResponse(nextQuestion, interview.getCurrentStage());
     }
 
     private String generateAiQuestion(
@@ -390,11 +370,6 @@ public class InterviewService {
         return List.of(InterviewStage.INTRO, InterviewStage.TECHNICAL, InterviewStage.BEHAVIORAL);
     }
 
-    public record AnswerResponse(
-            String question,
-            InterviewStage stage,
-            int score,
-            String strengths,
-            String improvements) {}
+    public record AnswerResponse(String question, InterviewStage stage) {}
 
 }

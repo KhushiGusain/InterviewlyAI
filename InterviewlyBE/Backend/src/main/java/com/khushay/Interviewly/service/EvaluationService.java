@@ -9,6 +9,9 @@ import com.khushay.Interviewly.model.Response;
 import com.khushay.Interviewly.repository.EvaluationRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -18,6 +21,7 @@ public class EvaluationService {
 
     public static final EvaluationResult FALLBACK_RESULT =
             new EvaluationResult(5, "Could not evaluate", "Try to be clearer");
+    private static final Logger log = LoggerFactory.getLogger(EvaluationService.class);
 
     private final OpenAIService openAIService;
     private final ObjectMapper objectMapper;
@@ -41,13 +45,15 @@ public class EvaluationService {
         return parseEvaluationResult(rawResponse);
     }
 
-    public EvaluationResult evaluateAndSave(Response response, Interview interview) {
+    @Async
+    public void evaluateAndSave(Response response, Interview interview) {
         if (response == null) {
             throw new IllegalArgumentException("response is required");
         }
         if (interview == null) {
             throw new IllegalArgumentException("interview is required");
         }
+        log.info("Starting evaluation for responseId: {}", response.getId());
 
         EvaluationResult result = evaluateAnswer(
                 response.getQuestion(),
@@ -61,7 +67,7 @@ public class EvaluationService {
         evaluation.setStrengths(result.getStrengths());
         evaluation.setImprovements(result.getImprovements());
         evaluationRepository.save(evaluation);
-        return result;
+        log.info("Evaluation completed for responseId: {}", response.getId());
     }
 
     private String buildPrompt(String question, String answer, String role, List<String> focusAreas) {
