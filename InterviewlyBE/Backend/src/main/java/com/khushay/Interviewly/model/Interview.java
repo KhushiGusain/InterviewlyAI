@@ -45,10 +45,6 @@ public class Interview {
     @Column(columnDefinition = "TEXT")
     private String jobDescription;
 
-    private String interviewType;
-
-    private String difficulty;
-
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "interview_focus_areas", joinColumns = @JoinColumn(name = "interview_id"))
     @Column(name = "focus_area", nullable = false)

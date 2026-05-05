@@ -27,7 +27,7 @@ public class QuestionTypeStrategy {
         InterviewStage stage = interview.getCurrentStage();
 
         if (stage == InterviewStage.INTRO) {
-            return "INTRO";
+            return QuestionType.INTRO.name();
         }
 
         if (stage == InterviewStage.TECHNICAL) {
@@ -38,7 +38,7 @@ public class QuestionTypeStrategy {
             return getNextFromSequence(interview.getLastQuestionType(), BEHAVIORAL_SEQUENCE);
         }
 
-        return "INTRO";
+        return QuestionType.INTRO.name();
     }
 
     private String getNextFromSequence(String lastQuestionType, List<QuestionType> sequence) {

@@ -43,14 +43,18 @@ public class InterviewService {
     private final FallbackQuestionService fallbackQuestionService;
     private final ApplicationEventPublisher eventPublisher;
     private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
+    private static final List<InterviewStage> STAGES = List.of(
+            InterviewStage.INTRO,
+            InterviewStage.TECHNICAL,
+            InterviewStage.BEHAVIORAL,
+            InterviewStage.END
+    );
 
     @Transactional
     public UUID createInterview(
             String role,
             String company,
             String jobDescription,
-            String interviewType,
-            String difficulty,
             List<String> focusAreas,
             MultipartFile resume,
             User user
@@ -59,8 +63,6 @@ public class InterviewService {
 
         String normalizedCompany = trimToNull(company);
         String normalizedJobDescription = trimToNull(jobDescription);
-        String normalizedInterviewType = trimToNull(interviewType);
-        String normalizedDifficulty = trimToNull(difficulty);
         List<String> normalizedFocusAreas = normalizeFocusAreas(focusAreas);
 
         if (resume == null || resume.isEmpty()) {
@@ -79,8 +81,6 @@ public class InterviewService {
         interview.setRole(normalizedRole);
         interview.setCompany(normalizedCompany);
         interview.setJobDescription(normalizedJobDescription);
-        interview.setInterviewType(normalizedInterviewType);
-        interview.setDifficulty(normalizedDifficulty);
         interview.setFocusAreas(normalizedFocusAreas);
         interview.setResumePath(resumePath);
         interview.setStatus("CREATED");
@@ -94,7 +94,7 @@ public class InterviewService {
         ensureResumeSummaryGeneratedOnce(interview);
 
         interviewRepository.save(interview);
-        interviewStagesInMemory.put(interview.getId(), stagesForInterviewType(normalizedInterviewType));
+        interviewStagesInMemory.put(interview.getId(), STAGES);
 
         return interview.getId();
     }
@@ -105,7 +105,7 @@ public class InterviewService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
-                id -> stagesForInterviewType(interview.getInterviewType())
+                id -> STAGES
         );
 
         ensureResumeSummaryGeneratedOnce(interview);
@@ -130,7 +130,7 @@ public class InterviewService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
-                id -> stagesForInterviewType(interview.getInterviewType())
+                id -> STAGES
         );
 
         if (!"IN_PROGRESS".equals(interview.getStatus())) {
@@ -142,10 +142,10 @@ public class InterviewService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start the interview before submitting answers");
         }
 
-        InterviewStage stageBeforeAnswer = interview.getCurrentStage();
-        if (stageBeforeAnswer == null) {
-            stageBeforeAnswer = stages.getFirst();
-            interview.setCurrentStage(stageBeforeAnswer);
+        InterviewStage currentStage = interview.getCurrentStage();
+        if (currentStage == null) {
+            currentStage = stages.getFirst();
+            interview.setCurrentStage(currentStage);
         }
 
         String trimmedAnswer = trimToNull(answer);
@@ -157,20 +157,30 @@ public class InterviewService {
         responseRepository.save(response);
         eventPublisher.publishEvent(new ResponseSavedEvent(response, interview));
 
-        int maxBasesInStage =
-                InterviewStageBudget.maxQuestionsForStage(interview.getInterviewType(), stageBeforeAnswer);
+        int maxBasesInStage = getMaxQuestionsForStage(currentStage);
         int baseQuestionsInStage = interview.getQuestionIndex();
 
         boolean allowFollowUp = StringUtils.hasText(trimmedAnswer)
-                && shouldAskFollowUp(stageBeforeAnswer, trimmedAnswer)
+                && shouldAskFollowUp(currentStage, trimmedAnswer)
                 && interview.getFollowUpsIssuedForCurrentBase() < 1
                 && interview.getFollowUpsUsedInStage() < 2;
         boolean nextIsFollowUp = allowFollowUp;
 
         if (!nextIsFollowUp && baseQuestionsInStage >= maxBasesInStage) {
-            int stageIndex = stages.indexOf(stageBeforeAnswer);
+            int stageIndex = stages.indexOf(currentStage);
             if (stageIndex >= 0 && stageIndex < stages.size() - 1) {
                 InterviewStage nextStage = stages.get(stageIndex + 1);
+                if (InterviewStage.END.equals(nextStage)) {
+                    interview.setCurrentStage(InterviewStage.END);
+                    interview.setStatus("COMPLETED");
+                    interview.setLastQuestionText(null);
+                    interview.setQuestionIndex(0);
+                    interview.setFollowUpsUsedInStage(0);
+                    interview.setFollowUpsIssuedForCurrentBase(0);
+                    interviewStagesInMemory.remove(interviewId);
+                    interviewRepository.save(interview);
+                    return new AnswerResponse("END", InterviewStage.END);
+                }
                 interview.setCurrentStage(nextStage);
                 interview.setFollowUpsUsedInStage(0);
                 interview.setFollowUpsIssuedForCurrentBase(0);
@@ -343,15 +353,13 @@ public class InterviewService {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private static List<InterviewStage> stagesForInterviewType(String interviewType) {
-        String normalizedType = interviewType == null ? "" : interviewType.trim().toUpperCase(Locale.ROOT);
-        if ("TECHNICAL".equals(normalizedType)) {
-            return List.of(InterviewStage.INTRO, InterviewStage.TECHNICAL);
-        }
-        if ("BEHAVIORAL".equals(normalizedType)) {
-            return List.of(InterviewStage.INTRO, InterviewStage.BEHAVIORAL);
-        }
-        return List.of(InterviewStage.INTRO, InterviewStage.TECHNICAL, InterviewStage.BEHAVIORAL);
+    private static int getMaxQuestionsForStage(InterviewStage stage) {
+        return switch (stage) {
+            case INTRO -> 2;
+            case TECHNICAL -> 5;
+            case BEHAVIORAL -> 3;
+            default -> 0;
+        };
     }
 
     public record AnswerResponse(String question, InterviewStage stage) {}

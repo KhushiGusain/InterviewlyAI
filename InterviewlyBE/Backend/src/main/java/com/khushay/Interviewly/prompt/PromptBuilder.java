@@ -35,7 +35,6 @@ public class PromptBuilder {
                 interview.getCompany(),
                 interview.getJobDescription(),
                 areas,
-                interview.getDifficulty(),
                 summary,
                 previousAnswer,
                 candidate.getName(),
@@ -61,7 +60,6 @@ public class PromptBuilder {
             String company,
             String jobDescription,
             List<String> focusAreas,
-            String difficulty,
             String resumeSummary,
             String previousAnswer,
             String userName,
@@ -74,7 +72,6 @@ public class PromptBuilder {
         String roleLine    = StringUtils.hasText(role)          ? role.trim()          : "(not specified)";
         String companyLine = StringUtils.hasText(company)       ? company.trim()       : null;
         String jdLine      = StringUtils.hasText(jobDescription) ? jobDescription.trim() : null;
-        String diffLine    = StringUtils.hasText(difficulty)    ? difficulty.trim()    : "(not specified)";
         String resumeLine  = StringUtils.hasText(resumeSummary) ? resumeSummary.trim() : "(not provided)";
         List<String> areas = normalizeFocusAreas(focusAreas);
 
@@ -93,11 +90,15 @@ public class PromptBuilder {
             sb.append("- Job description (prioritize these skills):\n  ").append(jdLine).append('\n');
         }
         sb.append("- Interview stage: ").append(stage.name()).append('\n');
-        sb.append("- Difficulty: ").append(diffLine).append('\n');
         if (!areas.isEmpty()) {
             sb.append("- Focus areas: ").append(String.join(", ", areas)).append('\n');
         }
         sb.append('\n');
+        sb.append("PRIORITY RULES:\n\n");
+        sb.append("1. Stage rules have highest priority\n");
+        sb.append("2. Question type must match stage\n");
+        sb.append("3. Resume and focus areas are secondary\n");
+        sb.append("4. Do NOT override stage rules because of resume or focus areas\n\n");
 
         // ── RESUME ───────────────────────────────────────────────────────────
         sb.append("RESUME SUMMARY\n");
@@ -134,7 +135,7 @@ public class PromptBuilder {
         sb.append("INTERVIEW FLOW GUIDELINE\n");
         sb.append("=====================================\n\n");
         sb.append("- Early questions should be easier and more introductory.\n");
-        sb.append("- Gradually increase depth and difficulty as the interview progresses.\n");
+        sb.append("- Gradually increase depth as the interview progresses.\n");
         sb.append("- Move from general -> specific -> deep.\n");
         sb.append("- Do NOT start with very hard or niche questions.\n\n");
 
@@ -179,6 +180,12 @@ public class PromptBuilder {
         sb.append("=====================================\n");
         sb.append("STAGE RULES\n");
         sb.append("=====================================\n\n");
+        sb.append("CRITICAL:\n");
+        sb.append("- You MUST strictly follow the stage.\n");
+        sb.append("- If stage is INTRO -> only intro questions allowed\n");
+        sb.append("- If stage is TECHNICAL -> only technical questions allowed\n");
+        sb.append("- If stage is BEHAVIORAL -> only behavioral questions allowed\n");
+        sb.append("- Violating this is NOT allowed\n\n");
         appendStageRules(sb, stage, areas, roleLine, jdLine);
 
         // ── QUESTION DIVERSITY ────────────────────────────────────────────────
@@ -204,30 +211,6 @@ public class PromptBuilder {
         sb.append("- This question must be of type: ").append(targetType).append('\n');
         sb.append("- Strictly follow it.\n");
         sb.append("- Do NOT switch category.\n\n");
-
-        // ── DIFFICULTY ENFORCEMENT ───────────────────────────────────────────
-        String difficultyLevel = normalizeDifficultyHint(difficulty);
-        sb.append("=====================================\n");
-        sb.append("DIFFICULTY ENFORCEMENT\n");
-        sb.append("=====================================\n\n");
-        sb.append("- Current difficulty: ").append(difficultyLevel).append('\n');
-        sb.append("- Apply these rules strictly:\n");
-        switch (difficultyLevel) {
-            case "EASY" -> {
-                sb.append("  - Ask basic concepts and fundamentals.\n");
-                sb.append("  - Keep scope simple; avoid deep multi-step complexity.\n");
-            }
-            case "MEDIUM" -> {
-                sb.append("  - Mix concept understanding with practical application.\n");
-                sb.append("  - Include moderate trade-offs or implementation reasoning.\n");
-            }
-            case "HARD" -> {
-                sb.append("  - Ask for deeper reasoning and justification of choices.\n");
-                sb.append("  - Include edge cases, constraints, and failure scenarios.\n");
-                sb.append("  - Push toward system-level thinking and trade-offs.\n");
-            }
-        }
-        sb.append('\n');
 
         // ── FOCUS AREA ENFORCEMENT ────────────────────────────────────────────
         if (!areas.isEmpty()) {
@@ -365,11 +348,18 @@ public class PromptBuilder {
         switch (stage) {
             case INTRO -> {
                 sb.append("Stage: INTRO\n");
-                sb.append("- Friendly, warm tone.\n");
-                sb.append("- Greet the candidate by name.\n");
-                sb.append("- Ask ONE light introduction or motivation question.\n");
-                sb.append("  (e.g. \"Tell me about yourself\" or \"Why are you interested in this role?\")\n");
-                sb.append("- Do NOT ask technical questions here.\n\n");
+                sb.append("- This is the FIRST interaction.\n");
+                sb.append("- ALWAYS start with a greeting using candidate name.\n\n");
+                sb.append("STRICT RULE:\n");
+                sb.append("- The FIRST question MUST be:\n");
+                sb.append("  \"Hi <name>, nice to meet you. Can you briefly introduce yourself?\"\n\n");
+                sb.append("- Do NOT ask any other type of question for the first intro.\n");
+                sb.append("- Do NOT ask technical or role-based questions.\n\n");
+                sb.append("Follow-up behavior:\n");
+                sb.append("- After the introduction, you may ask ONE follow-up:\n");
+                sb.append("  - about past experience OR\n");
+                sb.append("  - about a project mentioned\n\n");
+                sb.append("- Keep tone natural and conversational.\n\n");
             }
             case TECHNICAL -> {
                 sb.append("Stage: TECHNICAL\n");
@@ -384,9 +374,18 @@ public class PromptBuilder {
             }
             case BEHAVIORAL -> {
                 sb.append("Stage: BEHAVIORAL\n");
-                sb.append("- Experience-based questions: teamwork, conflict, decision-making, leadership, deadlines.\n");
-                sb.append("- You may reference resume experience sparingly (max once).\n");
-                sb.append("- Use STAR-style prompts where appropriate (Situation, Task, Action, Result).\n\n");
+                sb.append("- Ask ONLY behavioral / experience questions.\n");
+                sb.append("- Do NOT ask any technical or theoretical questions.\n");
+                sb.append("- Focus on:\n");
+                sb.append("  - teamwork\n");
+                sb.append("  - conflict\n");
+                sb.append("  - leadership\n");
+                sb.append("  - decision making\n");
+                sb.append("  - challenges\n\n");
+                sb.append("Examples:\n");
+                sb.append("- Tell me about a time you faced a challenge.\n");
+                sb.append("- Describe a situation where you had to make a difficult decision.\n");
+                sb.append("- Tell me about a time you worked in a team.\n\n");
             }
             case END -> {
                 sb.append("Stage: END\n");
@@ -421,13 +420,4 @@ public class PromptBuilder {
         };
     }
 
-    private static String normalizeDifficultyHint(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "MEDIUM";
-        }
-        return switch (value.trim().toUpperCase()) {
-            case "EASY", "MEDIUM", "HARD" -> value.trim().toUpperCase();
-            default -> "MEDIUM";
-        };
-    }
 }

@@ -43,8 +43,6 @@ public class InterviewController {
             @RequestParam("role") String role,
             @RequestParam(value = "company", required = false) String company,
             @RequestParam(value = "jobDescription", required = false) String jobDescription,
-            @RequestParam(value = "interviewType", required = false) String interviewType,
-            @RequestParam(value = "difficulty", required = false) String difficulty,
             @RequestParam(value = "focusAreas", required = false) String focusAreasJson,
             @RequestPart("resume") MultipartFile resume
     ) {
@@ -59,8 +57,6 @@ public class InterviewController {
                 role,
                 company,
                 jobDescription,
-                interviewType,
-                difficulty,
                 focusAreas,
                 resume,
                 user
