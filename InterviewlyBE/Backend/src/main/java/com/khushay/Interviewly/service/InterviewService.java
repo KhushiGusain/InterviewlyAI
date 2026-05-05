@@ -1,5 +1,6 @@
 package com.khushay.Interviewly.service;
 
+import com.khushay.Interviewly.dto.EvaluationResult;
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.Response;
@@ -38,6 +39,7 @@ public class InterviewService {
     private final OpenAIService openAIService;
     private final PromptBuilder promptBuilder;
     private final FallbackQuestionService fallbackQuestionService;
+    private final EvaluationService evaluationService;
     private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
 
     @Transactional
@@ -99,6 +101,12 @@ public class InterviewService {
     public String startInterview(UUID interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
+
+        // Idempotency guard: duplicate /start calls must return the same first question.
+        if ("IN_PROGRESS".equals(interview.getStatus()) && StringUtils.hasText(interview.getLastQuestionText())) {
+            return interview.getLastQuestionText();
+        }
+
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
                 id -> stagesForInterviewType(interview.getInterviewType())
@@ -151,6 +159,13 @@ public class InterviewService {
         response.setQuestion(previousQuestion);
         response.setAnswer(trimmedAnswer);
         responseRepository.save(response);
+        EvaluationResult evaluationResult = EvaluationService.FALLBACK_RESULT;
+        try {
+            evaluationResult = evaluationService.evaluateAndSave(response, interview);
+        } catch (Exception ex) {
+            // Evaluation is best-effort and must never block the interview flow.
+            log.warn("Evaluation failed for response {}; continuing interview flow", response.getId(), ex);
+        }
 
         int maxBasesInStage =
                 InterviewStageBudget.maxQuestionsForStage(interview.getInterviewType(), stageBeforeAnswer);
@@ -175,7 +190,11 @@ public class InterviewService {
                 interview.setQuestionIndex(1);
 
                 interviewRepository.save(interview);
-                return new AnswerResponse(firstOfNextStage, nextStage);
+                return new AnswerResponse(
+                        firstOfNextStage, nextStage,
+                        evaluationResult.getScore(),
+                        evaluationResult.getStrengths(),
+                        evaluationResult.getImprovements());
             }
             interview.setCurrentStage(InterviewStage.END);
             interview.setStatus("COMPLETED");
@@ -185,7 +204,11 @@ public class InterviewService {
             interview.setFollowUpsIssuedForCurrentBase(0);
             interviewStagesInMemory.remove(interviewId);
             interviewRepository.save(interview);
-            return new AnswerResponse("END", InterviewStage.END);
+            return new AnswerResponse(
+                    "END", InterviewStage.END,
+                    evaluationResult.getScore(),
+                    evaluationResult.getStrengths(),
+                    evaluationResult.getImprovements());
         }
 
         String nextQuestion = generateAiQuestion(interview, previousQuestion, trimmedAnswer, nextIsFollowUp);
@@ -202,7 +225,11 @@ public class InterviewService {
         }
 
         interviewRepository.save(interview);
-        return new AnswerResponse(nextQuestion, interview.getCurrentStage());
+        return new AnswerResponse(
+                nextQuestion, interview.getCurrentStage(),
+                evaluationResult.getScore(),
+                evaluationResult.getStrengths(),
+                evaluationResult.getImprovements());
     }
 
     private String generateAiQuestion(
@@ -363,6 +390,11 @@ public class InterviewService {
         return List.of(InterviewStage.INTRO, InterviewStage.TECHNICAL, InterviewStage.BEHAVIORAL);
     }
 
-    public record AnswerResponse(String question, InterviewStage stage) {}
+    public record AnswerResponse(
+            String question,
+            InterviewStage stage,
+            int score,
+            String strengths,
+            String improvements) {}
 
 }
