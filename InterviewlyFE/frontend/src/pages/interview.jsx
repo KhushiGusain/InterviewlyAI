@@ -25,7 +25,7 @@ function InterviewPage() {
       setLoading(true);
       try {
         const response = await apiRequest(`/interview/${interviewId}/start`, {
-          method: "GET",
+          method: "POST",
         });
         if (isMounted) {
           setQuestion(response?.question || "");

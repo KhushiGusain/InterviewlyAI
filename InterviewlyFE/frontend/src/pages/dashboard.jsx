@@ -185,9 +185,7 @@ function DashboardPage() {
     role: "",
     company: "",
     jobDescription: "",
-    interviewType: "MIXED",
     focusAreas: ["DSA"],
-    difficulty: "MEDIUM",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -295,8 +293,6 @@ function DashboardPage() {
       payload.append("role", formData.role);
       payload.append("company", formData.company);
       payload.append("jobDescription", formData.jobDescription);
-      payload.append("interviewType", formData.interviewType);
-      payload.append("difficulty", formData.difficulty);
       payload.append("focusAreas", JSON.stringify(formData.focusAreas));
       if (resumeFile) {
         payload.append("resume", resumeFile);
@@ -438,139 +434,74 @@ function DashboardPage() {
                 />
               </label>
 
-              {/* Interview Type + Focus Areas */}
-              <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
-                {/* Interview Type */}
-                <div>
-                  <p className="mb-2 text-xs font-medium text-[#a0b4d6]">Interview Type</p>
-                  <div className="grid gap-1.5 rounded-xl border border-[rgba(145,172,255,0.22)] bg-[rgba(7,13,30,0.45)] p-2.5">
-                    {[
-                      { label: "Technical", value: "TECHNICAL", sub: "DSA, System Design, Coding" },
-                      { label: "Behavioral", value: "BEHAVIORAL", sub: "HR, Leadership, Situational" },
-                      { label: "Mixed", value: "MIXED", sub: "Technical + Behavioral" },
-                    ].map(({ label, value, sub }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => handleChange("interviewType", value)}
-                        className={`flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
-                          formData.interviewType === value
-                            ? "bg-[rgba(78,141,255,0.08)]"
-                            : "hover:bg-[rgba(145,172,255,0.06)]"
-                        }`}
-                      >
-                        <div className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                          formData.interviewType === value ? "border-[#4e8dff] bg-[#4e8dff]" : "border-[#3a4d6a]"
-                        }`}>
-                          {formData.interviewType === value && (
-                            <div className="h-1.5 w-1.5 rounded-full bg-white" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm leading-tight font-medium text-[#f4f7ff]">{label}</p>
-                          <p className="text-[11px] text-[#7e90b0]">{sub}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Focus Areas */}
-                <div>
-                  <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
-                    Focus Areas{" "}
-                    <span className="font-normal text-[#8197bb]">(Select all that apply)</span>
-                  </p>
-                  <div className="flex flex-wrap gap-2.5">
-                    {FOCUS_AREAS.map((area) => (
-                      <button
-                        key={area}
-                        type="button"
-                        onClick={() => toggleFocus(area)}
-                        className={`flex min-w-[84px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                          formData.focusAreas.includes(area)
-                            ? "border-[#4e8dff] bg-[rgba(78,141,255,0.18)] text-[#7ab4ff]"
-                            : "border-[rgba(145,172,255,0.18)] bg-[rgba(7,13,30,0.5)] text-[#7b90b8] hover:border-[rgba(145,172,255,0.35)]"
-                        }`}
-                      >
-                        {formData.focusAreas.includes(area) && (
-                          <svg viewBox="0 0 12 12" fill="currentColor" className="h-3 w-3">
-                            <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )}
-                        {area}
-                      </button>
-                    ))}
+              {/* Focus Areas */}
+              <div>
+                <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
+                  Focus Areas{" "}
+                  <span className="font-normal text-[#8197bb]">(Select all that apply)</span>
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  {FOCUS_AREAS.map((area) => (
                     <button
+                      key={area}
                       type="button"
-                      className="flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-[rgba(145,172,255,0.25)] px-3 py-1.5 text-xs text-[#5a7299] transition hover:border-[rgba(145,172,255,0.45)] hover:text-[#7b90b8]"
+                      onClick={() => toggleFocus(area)}
+                      className={`flex min-w-[84px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        formData.focusAreas.includes(area)
+                          ? "border-[#4e8dff] bg-[rgba(78,141,255,0.18)] text-[#7ab4ff]"
+                          : "border-[rgba(145,172,255,0.18)] bg-[rgba(7,13,30,0.5)] text-[#7b90b8] hover:border-[rgba(145,172,255,0.35)]"
+                      }`}
                     >
-                      <PlusIcon /> Add Custom Topic
+                      {formData.focusAreas.includes(area) && (
+                        <svg viewBox="0 0 12 12" fill="currentColor" className="h-3 w-3">
+                          <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                      {area}
                     </button>
-                  </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-[rgba(145,172,255,0.25)] px-3 py-1.5 text-xs text-[#5a7299] transition hover:border-[rgba(145,172,255,0.45)] hover:text-[#7b90b8]"
+                  >
+                    <PlusIcon /> Add Custom Topic
+                  </button>
                 </div>
               </div>
 
-              {/* Difficulty + Upload */}
-              <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
-                {/* Difficulty */}
-                <div>
-                  <p className="mb-2 text-xs font-medium text-[#a0b4d6]">Difficulty Level</p>
-                  <div className="flex gap-2.5">
-                    {[
-                      { label: "Easy", value: "EASY" },
-                      { label: "Medium", value: "MEDIUM" },
-                      { label: "Hard", value: "HARD" },
-                    ].map(({ label, value }) => (
-                      <label key={value} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[rgba(145,172,255,0.2)] bg-[rgba(7,13,30,0.5)] px-3 py-1 text-sm text-[#c7d7f5]">
-                        <span
-                          onClick={() => handleChange("difficulty", value)}
-                          className={`flex h-4 w-4 items-center justify-center rounded-full border-2 cursor-pointer ${
-                            formData.difficulty === value ? "border-[#4e8dff] bg-[#4e8dff]" : "border-[#3a4d6a]"
-                          }`}
-                        >
-                          {formData.difficulty === value && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                        </span>
-                        {label}
-                      </label>
-                    ))}
+              {/* Upload Resume */}
+              <div>
+                <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
+                  Upload Resume <span className="font-normal text-[#8197bb]">(PDF/DOCX)</span>
+                </p>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => resumeInputRef.current?.click()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      resumeInputRef.current?.click();
+                    }
+                  }}
+                  className="flex h-[58px] cursor-pointer items-center justify-center gap-3 rounded-xl border border-dashed border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.5)] px-4 transition hover:border-[rgba(145,172,255,0.4)]"
+                >
+                  <UploadIcon />
+                  <div>
+                    <p className="text-xs leading-tight text-[#9aaed0]">
+                      {resumeFileName || "Click to upload or drag and drop"}
+                    </p>
+                    <p className="text-[11px] leading-tight text-[#7b90b8]">Max file size: 5MB</p>
                   </div>
                 </div>
-
-                {/* Upload Resume */}
-                <div>
-                  <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
-                    Upload Resume <span className="font-normal text-[#8197bb]">(PDF/DOCX)</span>
-                  </p>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => resumeInputRef.current?.click()}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        resumeInputRef.current?.click();
-                      }
-                    }}
-                    className="flex h-[58px] cursor-pointer items-center justify-center gap-3 rounded-xl border border-dashed border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.5)] px-4 transition hover:border-[rgba(145,172,255,0.4)]"
-                  >
-                    <UploadIcon />
-                    <div>
-                      <p className="text-xs leading-tight text-[#9aaed0]">
-                        {resumeFileName || "Click to upload or drag and drop"}
-                      </p>
-                      <p className="text-[11px] leading-tight text-[#7b90b8]">Max file size: 5MB</p>
-                    </div>
-                  </div>
-                  <input
-                    ref={resumeInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleResumeSelect}
-                    className="hidden"
-                  />
-                  {resumeError ? <p className="mt-2 text-xs text-[#ff9ca6]">{resumeError}</p> : null}
-                </div>
+                <input
+                  ref={resumeInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleResumeSelect}
+                  className="hidden"
+                />
+                {resumeError ? <p className="mt-2 text-xs text-[#ff9ca6]">{resumeError}</p> : null}
               </div>
             </div>
 
