@@ -16,7 +16,5 @@ public class ReportResponse {
     private double overallScore;
     private String performanceLabel;
     private Map<String, Double> stageBreakdown;
-    private List<String> strengths;
-    private List<String> improvements;
     private List<QuestionFeedback> questions;
 }

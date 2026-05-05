@@ -10,9 +10,6 @@ import com.khushay.Interviewly.repository.EvaluationRepository;
 import com.khushay.Interviewly.repository.InterviewRepository;
 import com.khushay.Interviewly.repository.ResponseRepository;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -53,16 +49,12 @@ public class ReportService {
                 .orElse(0.0);
 
         Map<String, Double> stageBreakdown = calculateStageBreakdown(responses, evaluationByResponseId);
-        List<String> strengths = collectTopUniqueBullets(evaluations.stream().map(Evaluation::getStrengths).toList(), 5);
-        List<String> improvements = collectTopUniqueBullets(evaluations.stream().map(Evaluation::getImprovements).toList(), 5);
         List<QuestionFeedback> questions = buildQuestionFeedback(responses, evaluationByResponseId);
 
         ReportResponse report = new ReportResponse();
         report.setOverallScore(overallScore);
         report.setPerformanceLabel(toPerformanceLabel(overallScore));
         report.setStageBreakdown(stageBreakdown);
-        report.setStrengths(strengths);
-        report.setImprovements(improvements);
         report.setQuestions(questions);
         return report;
     }
@@ -113,49 +105,6 @@ public class ReportService {
         return InterviewStage.BEHAVIORAL;
     }
 
-    private static List<String> collectTopUniqueBullets(Collection<String> rawTexts, int maxItems) {
-        LinkedHashSet<String> unique = new LinkedHashSet<>();
-        for (String text : rawTexts) {
-            if (!StringUtils.hasText(text)) {
-                continue;
-            }
-            Arrays.stream(text.split("\\r?\\n"))
-                    .map(String::trim)
-                    .map(ReportService::stripBulletPrefix)
-                    .filter(ReportService::isMeaningfulEntry)
-                    .forEach(unique::add);
-        }
-        if (unique.size() <= maxItems) {
-            return new ArrayList<>(unique);
-        }
-        return unique.stream().limit(maxItems).toList();
-    }
-
-    private static String stripBulletPrefix(String line) {
-        String normalized = line.trim();
-        if (normalized.startsWith("- ")) {
-            return normalized.substring(2).trim();
-        }
-        if (normalized.startsWith("* ")) {
-            return normalized.substring(2).trim();
-        }
-        if (normalized.matches("^\\d+\\.\\s+.*")) {
-            return normalized.replaceFirst("^\\d+\\.\\s+", "").trim();
-        }
-        return normalized;
-    }
-
-    private static boolean isMeaningfulEntry(String value) {
-        if (!StringUtils.hasText(value)) {
-            return false;
-        }
-        String normalized = value.trim();
-        if ("Could not evaluate".equalsIgnoreCase(normalized)) {
-            return false;
-        }
-        return !"none".equalsIgnoreCase(normalized);
-    }
-
     private static List<QuestionFeedback> buildQuestionFeedback(
             List<Response> responses, Map<UUID, Evaluation> evaluationByResponseId) {
         List<QuestionFeedback> feedbackList = new ArrayList<>();
@@ -181,8 +130,6 @@ public class ReportService {
         stageBreakdown.put(InterviewStage.TECHNICAL.name(), 0.0);
         stageBreakdown.put(InterviewStage.BEHAVIORAL.name(), 0.0);
         report.setStageBreakdown(stageBreakdown);
-        report.setStrengths(List.of());
-        report.setImprovements(List.of());
         report.setQuestions(List.of());
         return report;
     }
