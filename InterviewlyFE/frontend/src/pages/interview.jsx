@@ -10,6 +10,7 @@ function InterviewPage() {
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState("INTRO");
   const [answeredCount, setAnsweredCount] = useState(0);
+  const [submitError, setSubmitError] = useState("");
 
   function getStageLabel(stageValue) {
     const normalized = String(stageValue || "").toUpperCase();
@@ -28,6 +29,17 @@ function InterviewPage() {
           method: "POST",
         });
         if (isMounted) {
+          if (response?.status === "COMPLETED") {
+            navigate(`/reports/${interviewId}`, { replace: true });
+            return;
+          }
+
+          if (response?.status === "IN_PROGRESS") {
+            setQuestion(response?.lastQuestion || response?.question || "");
+            setStage(response?.stage || response?.round || "INTRO");
+            return;
+          }
+
           setQuestion(response?.question || "");
           setStage(response?.stage || response?.round || "INTRO");
         }
@@ -50,13 +62,14 @@ function InterviewPage() {
     return () => {
       isMounted = false;
     };
-  }, [interviewId]);
+  }, [interviewId, navigate]);
 
   async function handleSubmitAnswer() {
     if (!answer.trim() || !interviewId) {
       return;
     }
 
+    setSubmitError("");
     setLoading(true);
     try {
       const response = await apiRequest(`/interview/${interviewId}/answer`, {
@@ -64,29 +77,18 @@ function InterviewPage() {
         body: JSON.stringify({ answer }),
       });
 
+      if (response?.status === "COMPLETED") {
+        navigate(`/reports/${interviewId}`, { replace: true });
+        return;
+      }
+
       setQuestion(response?.question || "");
       setStage(response?.stage || response?.round || stage);
       setAnswer("");
       const nextCount = answeredCount + 1;
       setAnsweredCount(nextCount);
-
-      if (response?.status === "COMPLETED") {
-        navigate(`/reports/${interviewId}`, {
-          replace: true,
-          state: {
-            totalQuestionsAnswered:
-              response?.totalQuestionsAnswered ??
-              response?.summary?.totalQuestionsAnswered ??
-              response?.questionsAnswered ??
-              nextCount,
-            role: response?.role ?? response?.summary?.role ?? "Not available",
-            interviewType:
-              response?.interviewType ??
-              response?.summary?.interviewType ??
-              "Not available",
-          },
-        });
-      }
+    } catch (error) {
+      setSubmitError(error.message || "Failed to submit answer.");
     } finally {
       setLoading(false);
     }
@@ -129,10 +131,12 @@ function InterviewPage() {
         <button
           type="button"
           onClick={handleSubmitAnswer}
+          disabled={loading || !answer.trim()}
           className="mt-4 h-11 rounded-xl bg-linear-to-r from-[#2f80ff] to-[#5b33ff] px-5 text-sm font-semibold text-white transition hover:brightness-110"
         >
           Submit
         </button>
+        {submitError ? <p className="mt-3 text-sm text-[#ff9ca6]">{submitError}</p> : null}
       </div>
     </main>
   );

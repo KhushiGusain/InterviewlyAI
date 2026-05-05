@@ -14,57 +14,6 @@ const FOCUS_AREAS = [
   "Testing",
 ];
 
-const RECENT_INTERVIEWS = [
-  {
-    id: 1,
-    role: "Software Engineer",
-    company: "Google",
-    type: "Technical",
-    level: "Medium",
-    score: "85%",
-    status: "Completed",
-    logo: "G",
-    logoBg: "bg-white",
-    logoColor: "text-[#4285F4]",
-  },
-  {
-    id: 2,
-    role: "SDE Intern",
-    company: "Microsoft",
-    type: "Mixed",
-    level: "Medium",
-    score: "72%",
-    status: "Completed",
-    logo: "M",
-    logoBg: "bg-[#00A4EF]",
-    logoColor: "text-white",
-  },
-  {
-    id: 3,
-    role: "Backend Engineer",
-    company: "Amazon",
-    type: "Technical",
-    level: "Hard",
-    score: "—",
-    status: "In Progress",
-    logo: "a",
-    logoBg: "bg-[#FF9900]",
-    logoColor: "text-[#131921]",
-  },
-  {
-    id: 4,
-    role: "Frontend Developer",
-    company: "Meta",
-    type: "Technical",
-    level: "Easy",
-    score: "60%",
-    status: "Completed",
-    logo: "∞",
-    logoBg: "bg-[#0082FB]",
-    logoColor: "text-white",
-  },
-];
-
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={2}>
@@ -163,16 +112,24 @@ function SparkleIcon() {
 }
 
 function StatusBadge({ status }) {
-  if (status === "Completed") {
+  const normalizedStatus = String(status || "").toUpperCase();
+  if (normalizedStatus === "COMPLETED") {
     return (
       <span className="rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-0.5 text-xs font-medium text-[#4ade80]">
         Completed
       </span>
     );
   }
+  if (normalizedStatus === "IN_PROGRESS") {
+    return (
+      <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-0.5 text-xs font-medium text-[#fbbf24]">
+        In Progress
+      </span>
+    );
+  }
   return (
-    <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-0.5 text-xs font-medium text-[#fbbf24]">
-      In Progress
+    <span className="rounded-full border border-[#60a5fa]/40 bg-[#60a5fa]/10 px-3 py-0.5 text-xs font-medium text-[#93c5fd]">
+      Created
     </span>
   );
 }
@@ -194,12 +151,42 @@ function DashboardPage() {
   const [resumeError, setResumeError] = useState("");
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [displayName, setDisplayName] = useState("User");
+  const [dashboardData, setDashboardData] = useState(null);
+  const recentInterviews = dashboardData?.recentInterviews || [];
+  const incompleteCount = recentInterviews.filter(
+    (item) => item.status === "IN_PROGRESS" || item.status === "CREATED"
+  ).length;
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
     if (storedName?.trim()) {
       setDisplayName(storedName.trim());
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchDashboardData() {
+      try {
+        const response = await apiRequest("/dashboard", {
+          method: "GET",
+        });
+        if (isMounted) {
+          setDashboardData(response);
+        }
+      } catch {
+        if (isMounted) {
+          setDashboardData(null);
+        }
+      }
+    }
+
+    fetchDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   function handleChange(eventOrName, value) {
@@ -319,6 +306,7 @@ function DashboardPage() {
   return (
     <main
       className="relative min-h-screen overflow-y-auto overflow-x-hidden text-[#f4f7ff]"
+      data-dashboard-loaded={Boolean(dashboardData)}
       style={{ background: "radial-gradient(circle at 20% 10%, #0f245f 0%, #050918 45%, #03050f 100%)" }}
     >
       {/* Background orbs */}
@@ -545,10 +533,10 @@ function DashboardPage() {
               <h2 className="mb-4 text-base font-semibold text-[#f4f7ff]">Your Progress</h2>
               <div className="grid grid-cols-4 gap-3 text-center">
                 {[
-                  { icon: <CalendarIcon />, value: "12", label: "Interviews", color: "text-[#4e8dff]", bg: "bg-[rgba(78,141,255,0.15)]" },
-                  { icon: <CheckCircleIcon />, value: "8", label: "Completed", color: "text-[#a78bfa]", bg: "bg-[rgba(167,139,250,0.15)]" },
-                  { icon: <ChartIcon />, value: "75%", label: "Avg. Score", color: "text-[#34d399]", bg: "bg-[rgba(52,211,153,0.15)]" },
-                  { icon: <ClockIcon />, value: "24h", label: "Total Practice", color: "text-[#fb923c]", bg: "bg-[rgba(251,146,60,0.15)]" },
+                  { icon: <CalendarIcon />, value: String(dashboardData?.totalInterviews ?? 0), label: "Interviews", color: "text-[#4e8dff]", bg: "bg-[rgba(78,141,255,0.15)]" },
+                  { icon: <CheckCircleIcon />, value: String(dashboardData?.completedInterviews ?? 0), label: "Completed", color: "text-[#a78bfa]", bg: "bg-[rgba(167,139,250,0.15)]" },
+                  { icon: <ChartIcon />, value: `${Number(dashboardData?.avgScore ?? 0).toFixed(2)}`, label: "Avg. Score", color: "text-[#34d399]", bg: "bg-[rgba(52,211,153,0.15)]" },
+                  { icon: <ClockIcon />, value: String(incompleteCount), label: "Incomplete", color: "text-[#fb923c]", bg: "bg-[rgba(251,146,60,0.15)]" },
                 ].map(({ icon, value, label, color, bg }) => (
                   <div key={label} className="flex flex-col items-center gap-2">
                     <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${color}`}>
@@ -565,33 +553,38 @@ function DashboardPage() {
             <div className="rounded-2xl border border-[rgba(145,172,255,0.18)] bg-[rgba(14,21,46,0.65)] p-6 backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-[#f4f7ff]">Recent Interviews</h2>
-                <button className="cursor-pointer text-xs font-medium text-[#4e8dff] transition hover:text-[#7ab4ff]">
+                <button
+                  type="button"
+                  onClick={() => navigate("/interviews")}
+                  className="cursor-pointer text-xs font-medium text-[#4e8dff] transition hover:text-[#7ab4ff]"
+                >
                   View All
                 </button>
               </div>
 
               <div className="grid gap-2">
-                {RECENT_INTERVIEWS.map((item) => (
+                {recentInterviews.slice(0, 4).map((item) => (
                   <div
                     key={item.id}
+                    onClick={() => navigate(`/reports/${item.id}`)}
                     className="flex cursor-pointer items-center gap-3 rounded-xl border border-[rgba(145,172,255,0.1)] bg-[rgba(7,13,30,0.45)] px-4 py-3 transition hover:border-[rgba(145,172,255,0.25)] hover:bg-[rgba(7,13,30,0.65)]"
                   >
                     {/* Company logo */}
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.logoBg} ${item.logoColor} text-sm font-bold`}>
-                      {item.logo}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(78,141,255,0.2)] text-sm font-bold text-[#9ec3ff]">
+                      {String(item.role || "?").charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-[#f4f7ff]">{item.role}</p>
-                      <p className="text-[11px] text-[#5a7299]">
-                        {item.type} &bull; {item.level}
-                      </p>
+                      <p className="text-[11px] text-[#5a7299]">{new Date(item.createdAt).toLocaleDateString()}</p>
                     </div>
 
                     {/* Score */}
                     <div className="shrink-0 text-right">
-                      <p className="text-sm font-semibold text-[#f4f7ff]">{item.score}</p>
+                      <p className="text-sm font-semibold text-[#f4f7ff]">
+                        {item.score === null || item.score === undefined ? "—" : Number(item.score).toFixed(2)}
+                      </p>
                       <p className="text-[11px] text-[#5a7299]">Score</p>
                     </div>
 

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardPage from "./pages/dashboard";
 import InterviewPage from "./pages/interview";
+import InterviewsPage from "./pages/interviews";
 import LoginPage from "./pages/login";
 import ReportsPage from "./pages/reports";
 import SignupPage from "./pages/signup";
@@ -36,6 +37,14 @@ function App() {
         element={(
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/interviews"
+        element={(
+          <ProtectedRoute>
+            <InterviewsPage />
           </ProtectedRoute>
         )}
       />
