@@ -23,7 +23,15 @@ import org.springframework.util.StringUtils;
 public class EvaluationService {
 
     public static final EvaluationResult FALLBACK_RESULT =
-            new EvaluationResult(5, "Could not evaluate", "Try to be clearer");
+            new EvaluationResult(
+                    1,
+                    "No meaningful answer provided",
+                    "Answer is unclear or irrelevant. Provide a structured and relevant response.");
+    private static final EvaluationResult INVALID_ANSWER_RESULT =
+            new EvaluationResult(
+                    0,
+                    "No meaningful content",
+                    "Answer is invalid or unclear. Please provide a structured and relevant answer.");
     private static final Logger log = LoggerFactory.getLogger(EvaluationService.class);
 
     private final OpenAIService openAIService;
@@ -41,6 +49,9 @@ public class EvaluationService {
         }
         if (!StringUtils.hasText(answer)) {
             throw new IllegalArgumentException("answer is required");
+        }
+        if (isInvalidAnswer(answer)) {
+            return INVALID_ANSWER_RESULT;
         }
 
         String prompt = buildPrompt(question, answer, role, focusAreas);
@@ -111,6 +122,16 @@ public class EvaluationService {
                 + "- Do NOT assume unstated details.\n"
                 + "- If the candidate echoes the question, rephrases it, or gives generic filler,\n"
                 + "  treat it as a weak/non-answer and assign a low score (typically 0-3).\n"
+                + "- STRICT: If the answer is vague, irrelevant, or nonsensical (random text, repeated question,\n"
+                + "  or no real content), you MUST assign a low score (0-3). Do NOT give neutral or average scores.\n"
+                + "- Penalize:\n"
+                + "  - unclear answers\n"
+                + "  - repeated question\n"
+                + "  - irrelevant text\n"
+                + "- Reward:\n"
+                + "  - correctness\n"
+                + "  - clarity\n"
+                + "  - depth\n"
                 + "- strengths/improvements must reflect what is actually present/missing in this answer.\n\n"
                 + "Return STRICT JSON:\n"
                 + "{\n"
@@ -159,5 +180,39 @@ public class EvaluationService {
             throw new IllegalStateException("No JSON object found in evaluation response");
         }
         return cleaned.substring(start, end + 1);
+    }
+
+    private static boolean isInvalidAnswer(String answer) {
+        String trimmed = answer == null ? "" : answer.trim();
+        if (trimmed.length() < 5) {
+            return true;
+        }
+
+        // Require alphabetic content and at least two meaningful words.
+        String[] words = trimmed.split("\\s+");
+        int meaningfulWordCount = 0;
+        for (String word : words) {
+            String cleanedWord = word.replaceAll("[^A-Za-z]", "");
+            if (cleanedWord.length() >= 2) {
+                meaningfulWordCount++;
+            }
+        }
+        if (meaningfulWordCount < 2) {
+            return true;
+        }
+
+        // Guard against random-character strings like "asdj123 !! @@"
+        String lettersOnly = trimmed.replaceAll("[^A-Za-z]", "");
+        if (lettersOnly.length() < 4) {
+            return true;
+        }
+        if (!lettersOnly.matches(".*[AEIOUaeiou].*")) {
+            return true;
+        }
+
+        // Basic sentence structure check: should contain separators or multiple words.
+        boolean hasSentenceSeparator = trimmed.matches(".*[.!?,].*");
+        boolean hasMultipleWords = words.length >= 3;
+        return !hasSentenceSeparator && !hasMultipleWords;
     }
 }

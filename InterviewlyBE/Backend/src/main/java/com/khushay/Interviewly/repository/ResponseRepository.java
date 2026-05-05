@@ -14,4 +14,6 @@ public interface ResponseRepository extends JpaRepository<Response, UUID> {
     /** Returns the {@code question} texts for the most recent N responses of an interview (newest first). */
     @Query("SELECT r.question FROM Response r WHERE r.interview.id = :interviewId ORDER BY r.createdAt DESC")
     List<String> findRecentQuestions(@Param("interviewId") UUID interviewId, Pageable pageable);
+
+    List<Response> findByInterviewIdOrderByCreatedAtAsc(UUID interviewId);
 }
