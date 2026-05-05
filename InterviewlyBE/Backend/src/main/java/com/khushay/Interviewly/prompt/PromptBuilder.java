@@ -201,8 +201,8 @@ public class PromptBuilder {
         sb.append("=====================================\n");
         sb.append("CURRENT QUESTION TARGET\n");
         sb.append("=====================================\n\n");
-        sb.append("- This question should be of type: ").append(targetType).append('\n');
-        sb.append("- Follow this strictly.\n");
+        sb.append("- This question must be of type: ").append(targetType).append('\n');
+        sb.append("- Strictly follow it.\n");
         sb.append("- Do NOT switch category.\n\n");
 
         // ── DIFFICULTY ENFORCEMENT ───────────────────────────────────────────

@@ -77,6 +77,9 @@ public class Interview {
     @Column(columnDefinition = "TEXT")
     private String lastQuestionText;
 
+    /** Last question type returned to the candidate (for next-question selection context). */
+    private String lastQuestionType;
+
     /**
      * Follow-up questions issued in the current stage (max 2 per stage). Reset with {@link #questionIndex} when the
      * stage changes.

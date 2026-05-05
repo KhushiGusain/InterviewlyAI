@@ -1,5 +1,6 @@
 package com.khushay.Interviewly.service;
 
+import com.khushay.Interviewly.event.ResponseSavedEvent;
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.Response;
@@ -11,6 +12,7 @@ import com.khushay.Interviewly.util.ResumeMultipartFileHelper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,8 +39,9 @@ public class InterviewService {
     private final ResumeSummarizer resumeSummarizer;
     private final OpenAIService openAIService;
     private final PromptBuilder promptBuilder;
+    private final QuestionTypeStrategy questionTypeStrategy;
     private final FallbackQuestionService fallbackQuestionService;
-    private final EvaluationService evaluationService;
+    private final ApplicationEventPublisher eventPublisher;
     private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
 
     @Transactional
@@ -152,12 +155,7 @@ public class InterviewService {
         response.setQuestion(previousQuestion);
         response.setAnswer(trimmedAnswer);
         responseRepository.save(response);
-        try {
-            evaluationService.evaluateAndSave(response, interview);
-        } catch (Exception ex) {
-            // Evaluation is best-effort and must never block the interview flow.
-            log.warn("Evaluation failed for response {}; continuing interview flow", response.getId(), ex);
-        }
+        eventPublisher.publishEvent(new ResponseSavedEvent(response, interview));
 
         int maxBasesInStage =
                 InterviewStageBudget.maxQuestionsForStage(interview.getInterviewType(), stageBeforeAnswer);
@@ -214,18 +212,21 @@ public class InterviewService {
 
     private String generateAiQuestion(
             Interview interview, String previousQuestion, String previousAnswer, boolean isFollowUp) {
+        String questionType = questionTypeStrategy.getNextQuestionType(interview);
+        System.out.println("Question type: " + questionType);
         try {
             User candidate = interview.getUser();
             List<String> history = recentQuestionHistory(interview.getId());
-            String questionTypeHint = resolveQuestionTypeHint(interview, isFollowUp);
             String prompt = promptBuilder.buildQuestionPrompt(
                     interview, candidate, interview.getCurrentStage(),
-                    previousQuestion, previousAnswer, isFollowUp, history, questionTypeHint);
-            return openAIService.generateQuestion(prompt);
+                    previousQuestion, previousAnswer, isFollowUp, history, questionType);
+            String question = openAIService.generateQuestion(prompt);
+            interview.setLastQuestionType(questionType);
+            return question;
         } catch (Exception ex) {
             log.warn("Question generation failed; using fallback. stage={}", interview.getCurrentStage(), ex);
             List<String> areas = interview.getFocusAreas() != null ? interview.getFocusAreas() : List.of();
-            return fallbackQuestionService.getFallbackQuestion(
+            String fallbackQuestion = fallbackQuestionService.getFallbackQuestion(
                     interview.getCurrentStage(),
                     interview.getRole(),
                     areas,
@@ -233,6 +234,8 @@ public class InterviewService {
                     safeCandidateName(interview),
                     isFollowUp,
                     fallbackRotationKey(interview, isFollowUp));
+            interview.setLastQuestionType(questionType);
+            return fallbackQuestion;
         }
     }
 
@@ -244,25 +247,6 @@ public class InterviewService {
             log.warn("Could not load question history for interview {}: {}", interviewId, ex.getMessage());
             return List.of();
         }
-    }
-
-    private static String resolveQuestionTypeHint(Interview interview, boolean isFollowUp) {
-        InterviewStage stage = interview.getCurrentStage();
-        if (stage == null) {
-            return "CONCEPT";
-        }
-        if (isFollowUp) {
-            return "SCENARIO";
-        }
-        return switch (stage) {
-            case INTRO -> "ROLE_BASED";
-            case BEHAVIORAL, END -> "SCENARIO";
-            case TECHNICAL -> {
-                String[] order = {"CONCEPT", "PROBLEM_SOLVING", "ROLE_BASED", "SCENARIO", "RESUME"};
-                int index = Math.max(0, interview.getQuestionIndex() - 1);
-                yield order[index % order.length];
-            }
-        };
     }
 
     private static String safeCandidateName(Interview interview) {
