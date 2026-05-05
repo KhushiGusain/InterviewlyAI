@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -81,6 +82,7 @@ public class Interview {
      * stage changes.
      */
     @Column(nullable = false)
+    @ColumnDefault("0")
     private int followUpsUsedInStage;
 
     /**
@@ -88,6 +90,7 @@ public class Interview {
      * stage changes.
      */
     @Column(nullable = false)
+    @ColumnDefault("0")
     private int followUpsIssuedForCurrentBase;
 
     private LocalDateTime createdAt;

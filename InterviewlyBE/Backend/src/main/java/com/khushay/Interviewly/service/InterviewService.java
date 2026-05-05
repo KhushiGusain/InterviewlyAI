@@ -11,6 +11,7 @@ import com.khushay.Interviewly.util.ResumeMultipartFileHelper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -159,6 +157,7 @@ public class InterviewService {
         int baseQuestionsInStage = interview.getQuestionIndex();
 
         boolean allowFollowUp = StringUtils.hasText(trimmedAnswer)
+                && shouldAskFollowUp(stageBeforeAnswer, trimmedAnswer)
                 && interview.getFollowUpsIssuedForCurrentBase() < 1
                 && interview.getFollowUpsUsedInStage() < 2;
         boolean nextIsFollowUp = allowFollowUp;
@@ -210,8 +209,11 @@ public class InterviewService {
             Interview interview, String previousQuestion, String previousAnswer, boolean isFollowUp) {
         try {
             User candidate = interview.getUser();
+            List<String> history = recentQuestionHistory(interview.getId());
+            String questionTypeHint = resolveQuestionTypeHint(interview, isFollowUp);
             String prompt = promptBuilder.buildQuestionPrompt(
-                    interview, candidate, interview.getCurrentStage(), previousQuestion, previousAnswer, isFollowUp);
+                    interview, candidate, interview.getCurrentStage(),
+                    previousQuestion, previousAnswer, isFollowUp, history, questionTypeHint);
             return openAIService.generateQuestion(prompt);
         } catch (Exception ex) {
             log.warn("Question generation failed; using fallback. stage={}", interview.getCurrentStage(), ex);
@@ -225,6 +227,35 @@ public class InterviewService {
                     isFollowUp,
                     fallbackRotationKey(interview, isFollowUp));
         }
+    }
+
+    /** Returns the last 3 question texts for the interview (newest first). */
+    private List<String> recentQuestionHistory(UUID interviewId) {
+        try {
+            return responseRepository.findRecentQuestions(interviewId, PageRequest.of(0, 3));
+        } catch (Exception ex) {
+            log.warn("Could not load question history for interview {}: {}", interviewId, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    private static String resolveQuestionTypeHint(Interview interview, boolean isFollowUp) {
+        InterviewStage stage = interview.getCurrentStage();
+        if (stage == null) {
+            return "CONCEPT";
+        }
+        if (isFollowUp) {
+            return "SCENARIO";
+        }
+        return switch (stage) {
+            case INTRO -> "ROLE_BASED";
+            case BEHAVIORAL, END -> "SCENARIO";
+            case TECHNICAL -> {
+                String[] order = {"CONCEPT", "PROBLEM_SOLVING", "ROLE_BASED", "SCENARIO", "RESUME"};
+                int index = Math.max(0, interview.getQuestionIndex() - 1);
+                yield order[index % order.length];
+            }
+        };
     }
 
     private static String safeCandidateName(Interview interview) {
@@ -241,6 +272,42 @@ public class InterviewService {
                 + interview.getFollowUpsUsedInStage() * 3
                 + (isFollowUp ? 7 : 0)
                 + interview.getCurrentStage().ordinal() * 5;
+    }
+
+    /**
+     * Follow-up is allowed only when the answer likely contains a deeper technical concept
+     * or an explicit decision/trade-off signal.
+     */
+    private static boolean shouldAskFollowUp(InterviewStage stage, String answer) {
+        if (!StringUtils.hasText(answer)) {
+            return false;
+        }
+        String normalized = answer.toLowerCase(Locale.ROOT);
+
+        boolean hasTradeoffSignal = containsAny(normalized,
+                "trade-off", "tradeoff", "instead of", "rather than", "because", "pros and cons",
+                "latency", "throughput", "scalability", "consistency", "availability");
+
+        boolean hasTechnicalConcept = containsAny(normalized,
+                "algorithm", "complexity", "big-o", "o(", "memory", "cpu", "cache", "index",
+                "database", "query", "api", "microservice", "thread", "concurrency",
+                "synchronization", "architecture", "design pattern", "encapsulation", "polymorphism",
+                "inheritance", "abstraction", "solid", "edge case", "failure", "retry");
+
+        // In non-technical stages, require a stronger decision/trade-off signal for follow-ups.
+        if (!InterviewStage.TECHNICAL.equals(stage)) {
+            return hasTradeoffSignal;
+        }
+        return hasTradeoffSignal || hasTechnicalConcept;
+    }
+
+    private static boolean containsAny(String text, String... markers) {
+        for (String marker : markers) {
+            if (text.contains(marker)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

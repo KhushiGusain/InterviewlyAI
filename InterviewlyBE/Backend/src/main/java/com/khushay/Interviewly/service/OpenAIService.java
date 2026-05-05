@@ -1,6 +1,8 @@
 package com.khushay.Interviewly.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
@@ -21,14 +24,16 @@ public class OpenAIService {
     private static final int TEXT_RESPONSE_MAX_TOKENS = 400;
 
     private final WebClient webClient;
+    private final ObjectMapper objectMapper;
     private final String apiKey;
     private final String apiUrl;
 
     public OpenAIService(
-            WebClient.Builder webClientBuilder,
+            ObjectMapper objectMapper,
             @Value("${openai.api.key}") String apiKey,
             @Value("${openai.api.url}") String apiUrl) {
-        this.webClient = webClientBuilder.build();
+        this.webClient = WebClient.builder().build();
+        this.objectMapper = objectMapper;
         this.apiKey = apiKey;
         this.apiUrl = apiUrl;
     }
@@ -58,20 +63,29 @@ public class OpenAIService {
                 "temperature", temperature,
                 "max_tokens", maxTokens);
 
-        JsonNode root;
+        String responseJson;
         try {
-            root = webClient
+            responseJson = webClient
                     .post()
                     .uri(URI.create(apiUrl))
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(body)
                     .retrieve()
-                    .bodyToMono(JsonNode.class)
+                    .bodyToMono(String.class)
                     .block();
         } catch (WebClientResponseException e) {
             throw new IllegalStateException(
                     "OpenAI request failed: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
+        } catch (WebClientRequestException e) {
+            throw new IllegalStateException("OpenAI request failed: " + e.getMessage(), e);
+        }
+
+        JsonNode root;
+        try {
+            root = StringUtils.hasText(responseJson) ? objectMapper.readTree(responseJson) : null;
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("OpenAI returned invalid JSON", e);
         }
 
         if (root == null || !root.hasNonNull("choices") || root.path("choices").isEmpty()) {
