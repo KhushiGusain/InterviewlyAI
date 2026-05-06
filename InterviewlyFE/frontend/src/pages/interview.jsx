@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
+import { speakText, stopSpeaking } from "../utils/speech";
 
 function sessionKey(interviewId) {
   return `interviewly_interview_session:${interviewId}`;
@@ -110,6 +111,10 @@ function InterviewPage() {
   }, [interviewId, answer]);
 
   useEffect(() => {
+    speakText(question);
+  }, [question]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function syncSessionFromBackend() {
@@ -189,9 +194,22 @@ function InterviewPage() {
         </p>
 
         <section className="mt-6 rounded-xl border border-[rgba(145,172,255,0.18)] bg-[rgba(7,13,30,0.55)] p-4">
-          <p className="mb-2 text-xs uppercase tracking-widest text-[#7b90b8]">
-            Current Question
-          </p>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-widest text-[#7b90b8]">Current Question</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.speechSynthesis?.speaking) {
+                  stopSpeaking();
+                  return;
+                }
+                speakText(question);
+              }}
+              className="rounded-lg border border-[rgba(145,172,255,0.28)] bg-[rgba(14,21,46,0.6)] px-3 py-1 text-xs font-medium text-[#cfe0ff] transition hover:bg-[rgba(30,44,86,0.72)]"
+            >
+              Replay / Stop
+            </button>
+          </div>
           <p className="text-base leading-relaxed text-[#dce6ff]">
             {loading && !question
               ? "Loading question..."
