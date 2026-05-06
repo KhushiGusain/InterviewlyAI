@@ -13,3 +13,26 @@ body {
   overflow-y: auto;
   background: #030711;
 }
+
+.caption-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(145, 172, 255, 0.08);
+}
+
+.caption-text {
+  max-width: 48rem;
+  animation: captionFadeIn 220ms ease-out;
+}
+
+@keyframes captionFadeIn {
+  from {
+    opacity: 0.5;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
 import { speakText, stopSpeaking } from "../utils/speech";
+import useSpeechRecognition from "../hooks/useSpeechRecognition";
+
 
 function sessionKey(interviewId) {
   return `interviewly_interview_session:${interviewId}`;
@@ -65,6 +67,17 @@ function InterviewPage() {
   const [loadError, setLoadError] = useState("");
   const [isBackendSynced, setIsBackendSynced] = useState(false);
   const prevInterviewIdRef = useRef(null);
+  const latestAnswerRef = useRef("");
+  const transcriptScrollRef = useRef(null);
+  const {
+    transcript,
+    listening,
+    startListening,
+    stopListening,
+    resetTranscript,
+    unsupported,
+  } = useSpeechRecognition();
+  const micState = loading ? "processing" : listening ? "listening" : "idle";
 
   useEffect(() => {
     if (!interviewId) return;
@@ -77,6 +90,10 @@ function InterviewPage() {
     setLoadError("");
     setIsBackendSynced(false);
   }, [interviewId]);
+
+  useEffect(() => {
+    latestAnswerRef.current = answer;
+  }, [answer]);
 
   function getStageLabel(stageValue) {
     if (stageValue == null || stageValue === "") {
@@ -115,6 +132,17 @@ function InterviewPage() {
   }, [question]);
 
   useEffect(() => {
+    if (transcript?.trim()) {
+      setAnswer(transcript);
+    }
+  }, [transcript]);
+
+  useEffect(() => {
+    if (!transcriptScrollRef.current) return;
+    transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
+  }, [answer]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function syncSessionFromBackend() {
@@ -133,7 +161,7 @@ function InterviewPage() {
           navigate(`/reports/${interviewId}`, { replace: true });
           return;
         }
-        applySessionState(response, answer);
+        applySessionState(response, latestAnswerRef.current);
       } catch (err) {
         if (isMounted) {
           setLoadError(err?.message || "Could not load interview session.");
@@ -157,9 +185,11 @@ function InterviewPage() {
 
   async function handleSubmitAnswer() {
     if (!answer.trim() || !interviewId) {
+      setSubmitError("Please record your response first.");
       return;
     }
 
+    stopListening();
     setSubmitError("");
     setLoading(true);
     try {
@@ -169,12 +199,17 @@ function InterviewPage() {
       });
 
       if (response?.status === "COMPLETED") {
+        stopListening();
+        setAnswer("");
+        resetTranscript();
         clearPersistedSession(interviewId);
         navigate(`/reports/${interviewId}`, { replace: true });
         return;
       }
 
+      stopListening();
       applySessionState(response, "");
+      resetTranscript();
     } catch (error) {
       setSubmitError(error.message || "Failed to submit answer.");
     } finally {
@@ -182,20 +217,121 @@ function InterviewPage() {
     }
   }
 
-  return (
-    <main className="min-h-screen bg-[#030711] px-6 py-10 text-[#f4f7ff]">
-      <div className="mx-auto w-full max-w-5xl rounded-2xl border border-[rgba(145,172,255,0.18)] bg-[rgba(14,21,46,0.65)] p-6 backdrop-blur-xl">
-        <h1 className="text-2xl font-semibold">Interview Session</h1>
-        <p className="mt-2 text-sm text-[#9fb1d3]">
-          Interview ID: <span className="font-medium text-[#dce6ff]">{interviewId}</span>
-        </p>
-        <p className="mt-2 inline-flex rounded-full border border-[rgba(145,172,255,0.22)] bg-[rgba(7,13,30,0.55)] px-3 py-1 text-xs font-medium text-[#b8cdf2]">
-          {getStageLabel(stage)}
-        </p>
+  function handleCopyInterviewId() {
+    if (!interviewId || !navigator?.clipboard) return;
+    navigator.clipboard.writeText(interviewId).catch(() => {});
+  }
 
-        <section className="mt-6 rounded-xl border border-[rgba(145,172,255,0.18)] bg-[rgba(7,13,30,0.55)] p-4">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-widest text-[#7b90b8]">Current Question</p>
+  return (
+    <main className="min-h-screen bg-[#02050d] px-6 py-4 text-[#f4f7ff]">
+      <div className="w-full rounded-2xl border border-[rgba(90,120,220,0.25)] bg-[radial-gradient(circle_at_top,rgba(31,83,255,0.24),rgba(5,10,28,0.94)_56%)] shadow-[0_0_80px_rgba(45,84,255,0.18)]">
+        <div className="border-b border-[rgba(120,145,220,0.14)] px-7 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-[1.6rem] font-semibold tracking-tight text-[#f4f7ff]">
+                Interviewly<span className="text-[#4e8dff]">AI</span>
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/interviews")}
+              className="rounded-lg border cursor-pointer border-[rgba(255,109,136,0.35)] bg-[rgba(83,30,47,0.45)] px-4 py-2 text-sm font-medium text-[#ffafbc] transition hover:bg-[rgba(121,42,67,0.5)]"
+            >
+              Leave Interview
+            </button>
+          </div>
+        </div>
+
+        <div className="px-7 pb-3 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-xs">
+              <span className="rounded-full bg-[rgba(110,72,210,0.34)] px-3 py-1 font-medium text-[#cab8ff]">
+                {getStageLabel(stage)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-[#91a2c8]">
+              <span>Interview ID: {interviewId}</span>
+              <button
+                type="button"
+                onClick={handleCopyInterviewId}
+                className="rounded p-1 text-[#a8bbe3] cursor-pointer transition hover:bg-[rgba(84,102,156,0.35)]"
+                aria-label="Copy interview id"
+              >
+                ⧉
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-10 text-center">
+            <p className="text-xs font-semibold tracking-[0.28em] text-[#8f70ff]">AI INTERVIEWER IS ASKING</p>
+            <h2 className="mx-auto mt-4 max-w-3xl text-xl leading-snug text-[#edf3ff]">
+              {loading && !question
+                ? "Loading question..."
+                : question || (loadError ? "Could not sync with the server yet." : "No question available.")}
+            </h2>
+            <div className="mx-auto mt-6 flex w-full max-w-lg items-end justify-center gap-1 opacity-80">
+              {Array.from({ length: 48 }).map((_, index) => (
+                <span
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={index}
+                  className="inline-block w-[2px] animate-pulse rounded-full bg-[rgba(134,95,255,0.7)]"
+                  style={{ height: `${6 + ((index * 7) % 18)}px`, animationDelay: `${(index % 9) * 90}ms` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => {
+                if (listening) {
+                  stopListening();
+                  return;
+                }
+                stopSpeaking();
+                resetTranscript();
+                startListening();
+              }}
+              disabled={unsupported || micState === "processing"}
+              className={`flex h-18 w-18 cursor-pointer items-center justify-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                micState === "listening"
+                  ? "animate-pulse border-[rgba(123,94,255,0.92)] bg-[rgba(66,32,155,0.72)] text-white shadow-[0_0_0_8px_rgba(123,94,255,0.26)]"
+                  : micState === "processing"
+                    ? "border-[rgba(248,201,112,0.7)] bg-[rgba(92,69,24,0.68)] text-[#ffedc4]"
+                    : "border-[rgba(123,94,255,0.85)] bg-[rgba(43,28,98,0.55)] text-white shadow-[0_0_0_6px_rgba(123,94,255,0.18)] hover:bg-[rgba(59,38,126,0.72)]"
+              }`}
+              aria-label={listening ? "Stop microphone" : "Start microphone"}
+            >
+              {micState === "processing" ? (
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-[rgba(255,237,196,0.35)] border-t-[#ffedc4]" />
+              ) : (
+                <img src="/src/assets/mic-loop.svg" alt="Microphone" className="h-14 w-14" />
+              )}
+            </button>
+            <p className="mt-4 text-lg font-medium text-[#e7edff]">
+              {micState === "listening"
+                ? "Listening..."
+                : micState === "processing"
+                  ? "Submitting response..."
+                  : "Tap to start speaking"}
+            </p>
+            {unsupported ? <p className="mt-2 text-xs text-[#ff9ca6]">Voice input works best in Chrome</p> : null}
+          </div>
+
+          <div className="mx-auto mt-6 w-full max-w-4xl rounded-xl border border-[rgba(100,120,184,0.25)] bg-[rgba(10,20,44,0.62)] px-6 py-4">
+            <p className="mb-2 text-[11px] font-semibold tracking-[0.22em] text-[#9b7dff]">LIVE TRANSCRIPT</p>
+            <div ref={transcriptScrollRef} className="caption-panel h-24 overflow-y-auto pr-1 text-center">
+              <p
+                key={answer || "caption-placeholder"}
+                className="caption-text text-base leading-relaxed text-[#dbe6ff]"
+              >
+                {answer || "Your spoken response will appear here in real-time..."}
+              </p>
+            </div>
+          </div>
+
+          <div className="mx-auto mt-4 flex w-full max-w-4xl items-center justify-between gap-4">
             <button
               type="button"
               onClick={() => {
@@ -205,47 +341,37 @@ function InterviewPage() {
                 }
                 speakText(question);
               }}
-              className="rounded-lg border border-[rgba(145,172,255,0.28)] bg-[rgba(14,21,46,0.6)] px-3 py-1 text-xs font-medium text-[#cfe0ff] transition hover:bg-[rgba(30,44,86,0.72)]"
+              disabled={listening}
+              className="rounded-xl cursor-pointer border border-[rgba(112,134,200,0.32)] bg-[rgba(20,31,64,0.62)] px-4 py-2 text-sm text-[#d2ddff] transition hover:bg-[rgba(33,49,94,0.72)] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-[rgba(20,31,64,0.62)]"
             >
-              Replay / Stop
+              🔊 Replay Question
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitAnswer}
+              disabled={loading || !answer.trim()}
+              className="inline-flex min-w-44 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#5f32ff] to-[#7659ff] px-8 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
+            >
+              {loading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+                  Processing...
+                </>
+              ) : (
+                "Submit Answer →"
+              )}
             </button>
           </div>
-          <p className="text-base leading-relaxed text-[#dce6ff]">
-            {loading && !question
-              ? "Loading question..."
-              : question || (loadError ? "Could not sync with the server yet." : "No question available.")}
+
+          {!isBackendSynced ? (
+            <p className="mt-3 text-center text-xs text-[#8fa3c8]">Syncing latest session from server...</p>
+          ) : null}
+          {loadError ? <p className="mt-3 text-center text-sm text-[#ff9ca6]">{loadError}</p> : null}
+          {submitError ? <p className="mt-3 text-center text-sm text-[#ff9ca6]">{submitError}</p> : null}
+          <p className="mt-7 border-t border-[rgba(100,120,184,0.2)] py-4 text-center text-xs text-[#7f93bf]">
+            Your answers are secure and will only be used for generating your interview report.
           </p>
-        </section>
-        {!isBackendSynced ? (
-          <p className="mt-3 text-xs text-[#8fa3c8]">Syncing latest session from server...</p>
-        ) : null}
-        {loadError ? (
-          <p className="mt-3 text-sm text-[#ff9ca6]">{loadError}</p>
-        ) : null}
-
-        <div className="mt-5">
-          <label htmlFor="answer" className="mb-2 block text-sm font-medium text-[#c7d7f5]">
-            Your Answer
-          </label>
-          <input
-            id="answer"
-            type="text"
-            value={answer}
-            onChange={(event) => setAnswer(event.target.value)}
-            placeholder="Type your answer here..."
-            className="h-11 w-full rounded-xl border border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.6)] px-4 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.2)]"
-          />
         </div>
-
-        <button
-          type="button"
-          onClick={handleSubmitAnswer}
-          disabled={loading || !answer.trim()}
-          className="mt-4 h-11 rounded-xl bg-linear-to-r from-[#2f80ff] to-[#5b33ff] px-5 text-sm font-semibold text-white transition hover:brightness-110"
-        >
-          Submit
-        </button>
-        {submitError ? <p className="mt-3 text-sm text-[#ff9ca6]">{submitError}</p> : null}
       </div>
     </main>
   );
