@@ -65,15 +65,13 @@ public class InterviewService {
         String normalizedJobDescription = trimToNull(jobDescription);
         List<String> normalizedFocusAreas = normalizeFocusAreas(focusAreas);
 
-        if (resume == null || resume.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Resume file is required");
-        }
-
-        String resumePath;
-        try {
-            resumePath = ResumeMultipartFileHelper.save(resume);
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store resume", e);
+        String resumePath = null;
+        if (resume != null && !resume.isEmpty()) {
+            try {
+                resumePath = ResumeMultipartFileHelper.save(resume);
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store resume", e);
+            }
         }
 
         Interview interview = new Interview();
@@ -83,7 +81,7 @@ public class InterviewService {
         interview.setJobDescription(normalizedJobDescription);
         interview.setFocusAreas(normalizedFocusAreas);
         interview.setResumePath(resumePath);
-        interview.setStatus("NOT_STARTED");
+        interview.setStatus(Interview.STATUS_NOT_STARTED);
         interview.setCurrentStage(InterviewStage.INTRO);
         interview.setQuestionIndex(0);
         interview.setLastQuestionText(null);
@@ -101,28 +99,26 @@ public class InterviewService {
     }
 
     @Transactional
-    public StartInterviewResponse startInterview(UUID interviewId) {
+    public StartInterviewResponse getOrCreateInterviewSession(UUID interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
 
-        if ("COMPLETED".equals(interview.getStatus())) {
-            return new StartInterviewResponse("COMPLETED", null, "/reports/" + interviewId);
+        if (Interview.STATUS_COMPLETED.equals(interview.getStatus())) {
+            return new StartInterviewResponse(Interview.STATUS_COMPLETED, null, null);
         }
 
-        if ("IN_PROGRESS".equals(interview.getStatus())) {
-            String lastQuestion = interview.getLastQuestionText();
-            if (!StringUtils.hasText(lastQuestion)) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Interview is in progress but no question is available");
-            }
-            return new StartInterviewResponse("IN_PROGRESS", lastQuestion, null);
+        if (Interview.STATUS_IN_PROGRESS.equals(interview.getStatus())) {
+            return new StartInterviewResponse(
+                    Interview.STATUS_IN_PROGRESS,
+                    interview.getLastQuestionText(),
+                    interview.getCurrentStage()
+            );
         }
 
-        if (!"NOT_STARTED".equals(interview.getStatus())) {
+        if (!Interview.STATUS_NOT_STARTED.equals(interview.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Interview can only be started from NOT_STARTED state");
+                    "Interview has invalid status for session retrieval");
         }
 
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
@@ -132,19 +128,19 @@ public class InterviewService {
 
         ensureResumeSummaryGeneratedOnce(interview);
 
-        interview.setStatus("IN_PROGRESS");
+        interview.setStatus(Interview.STATUS_IN_PROGRESS);
         interview.setCurrentStage(stages.getFirst());
         interview.setQuestionIndex(0);
         interview.setFollowUpsUsedInStage(0);
         interview.setFollowUpsIssuedForCurrentBase(0);
         interview.setCompletedAt(null);
 
-        String question = generateAiQuestion(interview, null, null, false);
-        interview.setLastQuestionText(question);
+        String firstQuestion = generateAiQuestion(interview, null, null, false);
+        interview.setLastQuestionText(firstQuestion);
         interview.setQuestionIndex(1);
 
         interviewRepository.save(interview);
-        return new StartInterviewResponse("IN_PROGRESS", question, null);
+        return new StartInterviewResponse(Interview.STATUS_IN_PROGRESS, firstQuestion, InterviewStage.INTRO);
     }
 
     @Transactional
@@ -156,7 +152,11 @@ public class InterviewService {
                 id -> STAGES
         );
 
-        if (!"IN_PROGRESS".equals(interview.getStatus())) {
+        if (Interview.STATUS_COMPLETED.equals(interview.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Interview already completed");
+        }
+
+        if (!Interview.STATUS_IN_PROGRESS.equals(interview.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Interview is not in progress");
         }
 
@@ -195,7 +195,7 @@ public class InterviewService {
                 InterviewStage nextStage = stages.get(stageIndex + 1);
                 if (InterviewStage.END.equals(nextStage)) {
                     interview.setCurrentStage(InterviewStage.END);
-                    interview.setStatus("COMPLETED");
+                    interview.setStatus(Interview.STATUS_COMPLETED);
                     interview.setCompletedAt(LocalDateTime.now());
                     interview.setLastQuestionText(null);
                     interview.setQuestionIndex(0);
@@ -217,7 +217,7 @@ public class InterviewService {
                 return new AnswerResponse(firstOfNextStage, nextStage);
             }
             interview.setCurrentStage(InterviewStage.END);
-            interview.setStatus("COMPLETED");
+            interview.setStatus(Interview.STATUS_COMPLETED);
             interview.setCompletedAt(LocalDateTime.now());
             interview.setLastQuestionText(null);
             interview.setQuestionIndex(0);
@@ -344,6 +344,10 @@ public class InterviewService {
         if (interview.getResumeSummary() != null) {
             return;
         }
+        if (!StringUtils.hasText(interview.getResumePath())) {
+            interview.setResumeSummary("");
+            return;
+        }
         String rawText = resumeParser.extractTextFromStoredPdf(interview.getResumePath());
         String summary = "";
         if (StringUtils.hasText(rawText)) {
@@ -388,6 +392,6 @@ public class InterviewService {
     }
 
     public record AnswerResponse(String question, InterviewStage stage) {}
-    public record StartInterviewResponse(String status, String question, String redirect) {}
+    public record StartInterviewResponse(String status, String question, InterviewStage stage) {}
 
 }

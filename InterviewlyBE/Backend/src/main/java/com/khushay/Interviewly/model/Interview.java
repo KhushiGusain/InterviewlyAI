@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.ColumnDefault;
 import lombok.Getter;
@@ -21,6 +22,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -28,6 +30,14 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Interview {
+    public static final String STATUS_NOT_STARTED = "NOT_STARTED";
+    public static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    public static final String STATUS_COMPLETED = "COMPLETED";
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            STATUS_NOT_STARTED,
+            STATUS_IN_PROGRESS,
+            STATUS_COMPLETED
+    );
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -99,5 +109,20 @@ public class Interview {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.status == null || this.status.isBlank()) {
+            this.status = STATUS_NOT_STARTED;
+        }
+        validateStatus();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        validateStatus();
+    }
+
+    private void validateStatus() {
+        if (this.status == null || !ALLOWED_STATUSES.contains(this.status)) {
+            throw new IllegalStateException("Invalid interview status: " + this.status);
+        }
     }
 }

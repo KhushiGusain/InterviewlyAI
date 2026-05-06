@@ -29,7 +29,7 @@ public class DashboardService {
 
         int totalInterviews = allForUser.size();
         List<Interview> completed = allForUser.stream()
-                .filter(interview -> "COMPLETED".equalsIgnoreCase(interview.getStatus()))
+                .filter(interview -> Interview.STATUS_COMPLETED.equals(interview.getStatus()))
                 .toList();
         int completedInterviews = completed.size();
 
@@ -43,14 +43,13 @@ public class DashboardService {
         List<RecentInterviewDto> recentInterviews = allForUser.stream()
                 .sorted(Comparator.comparing(Interview::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                         .reversed())
-                .limit(5)
                 .map(interview -> {
                     RecentInterviewDto dto = new RecentInterviewDto();
                     dto.setId(interview.getId());
                     dto.setRole(interview.getRole());
                     dto.setStatus(interview.getStatus());
                     dto.setCreatedAt(interview.getCreatedAt());
-                    if ("COMPLETED".equalsIgnoreCase(interview.getStatus())) {
+                    if (Interview.STATUS_COMPLETED.equals(interview.getStatus())) {
                         dto.setScore(scoreByInterviewId.getOrDefault(interview.getId(), 0.0));
                     } else {
                         dto.setScore(null);

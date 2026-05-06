@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khushay.Interviewly.dto.InterviewAnswerRequest;
 import com.khushay.Interviewly.dto.InterviewCreatedResponse;
+import com.khushay.Interviewly.dto.InterviewSessionResponse;
+import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.User;
 import com.khushay.Interviewly.repository.UserRepository;
@@ -26,9 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -45,7 +45,7 @@ public class InterviewController {
             @RequestParam(value = "company", required = false) String company,
             @RequestParam(value = "jobDescription", required = false) String jobDescription,
             @RequestParam(value = "focusAreas", required = false) String focusAreasJson,
-            @RequestPart("resume") MultipartFile resume
+            @RequestPart(value = "resume", required = false) MultipartFile resume
     ) {
         List<String> focusAreas = parseFocusAreas(focusAreasJson);
 
@@ -66,30 +66,34 @@ public class InterviewController {
         return ResponseEntity.ok(new InterviewCreatedResponse(interviewId.toString()));
     }
 
-    @PostMapping("/interview/{id}/start")
-    public ResponseEntity<Map<String, String>> startInterview(@PathVariable("id") UUID interviewId) {
-        InterviewService.StartInterviewResponse start = interviewService.startInterview(interviewId);
-        Map<String, String> body = new LinkedHashMap<>();
-        body.put("status", start.status());
-        if (start.question() != null) {
-            body.put("question", start.question());
-        }
-        if (start.redirect() != null) {
-            body.put("redirect", start.redirect());
-        }
-        return ResponseEntity.ok(body);
+    @GetMapping("/interview/{id}/session")
+    public ResponseEntity<InterviewSessionResponse> getInterviewSession(@PathVariable("id") UUID interviewId) {
+        InterviewService.StartInterviewResponse session = interviewService.getOrCreateInterviewSession(interviewId);
+        return ResponseEntity.ok(new InterviewSessionResponse(
+                session.status(),
+                session.question(),
+                session.stage() != null ? session.stage().name() : null
+        ));
     }
 
     @PostMapping("/interview/{id}/answer")
-    public ResponseEntity<Map<String, String>> answerInterview(
+    public ResponseEntity<InterviewSessionResponse> answerInterview(
             @PathVariable("id") UUID interviewId,
             @RequestBody InterviewAnswerRequest request
     ) {
         InterviewService.AnswerResponse next = interviewService.submitAnswer(interviewId, request.getAnswer());
         if (InterviewStage.END.equals(next.stage())) {
-            return ResponseEntity.ok(Map.of("status", "COMPLETED"));
+            return ResponseEntity.ok(new InterviewSessionResponse(
+                    Interview.STATUS_COMPLETED,
+                    null,
+                    InterviewStage.END.name()
+            ));
         }
-        return ResponseEntity.ok(Map.of("question", next.question(), "stage", next.stage().name()));
+        return ResponseEntity.ok(new InterviewSessionResponse(
+                Interview.STATUS_IN_PROGRESS,
+                next.question(),
+                next.stage().name()
+        ));
     }
 
     private List<String> parseFocusAreas(String focusAreasJson) {
