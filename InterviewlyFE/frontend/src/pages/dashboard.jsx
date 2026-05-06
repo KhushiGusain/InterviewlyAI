@@ -123,13 +123,13 @@ function StatusBadge({ status }) {
   if (normalizedStatus === "IN_PROGRESS") {
     return (
       <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-0.5 text-xs font-medium text-[#fbbf24]">
-        In Progress
+        Continue Interview
       </span>
     );
   }
   return (
     <span className="rounded-full border border-[#60a5fa]/40 bg-[#60a5fa]/10 px-3 py-0.5 text-xs font-medium text-[#93c5fd]">
-      Created
+      Start
     </span>
   );
 }
@@ -142,8 +142,12 @@ function DashboardPage() {
     role: "",
     company: "",
     jobDescription: "",
-    focusAreas: ["DSA"],
+    focusAreas: [],
   });
+  const [customTopics, setCustomTopics] = useState([]);
+  const [isCustomTopicModalOpen, setIsCustomTopicModalOpen] = useState(false);
+  const [customTopicInput, setCustomTopicInput] = useState("");
+  const [customTopicError, setCustomTopicError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [resumeFileName, setResumeFileName] = useState("");
@@ -154,8 +158,17 @@ function DashboardPage() {
   const [dashboardData, setDashboardData] = useState(null);
   const recentInterviews = dashboardData?.recentInterviews || [];
   const incompleteCount = recentInterviews.filter(
-    (item) => item.status === "IN_PROGRESS" || item.status === "CREATED"
+    (item) => item.status === "IN_PROGRESS" || item.status === "NOT_STARTED"
   ).length;
+
+  function getInterviewNavigationPath(item) {
+    const status = String(item?.status || "").toUpperCase();
+    if (status === "COMPLETED") return `/reports/${item.id}`;
+    if (status === "IN_PROGRESS" || status === "NOT_STARTED" || status === "CREATED") {
+      return `/interview/${item.id}`;
+    }
+    return `/interview/${item.id}`;
+  }
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
@@ -206,6 +219,38 @@ function DashboardPage() {
         ? prev.focusAreas.filter((a) => a !== area)
         : [...prev.focusAreas, area],
     }));
+  }
+
+  function openCustomTopicModal() {
+    setCustomTopicInput("");
+    setCustomTopicError("");
+    setIsCustomTopicModalOpen(true);
+  }
+
+  function closeCustomTopicModal() {
+    setIsCustomTopicModalOpen(false);
+    setCustomTopicInput("");
+    setCustomTopicError("");
+  }
+
+  function handleAddCustomTopic() {
+    const topic = customTopicInput.trim();
+    if (!topic) {
+      setCustomTopicError("Topic name is required.");
+      return;
+    }
+
+    const normalizedTopic = topic.toLowerCase();
+    const alreadyExistsInDefault = FOCUS_AREAS.some((area) => area.toLowerCase() === normalizedTopic);
+    const alreadyExistsInCustom = customTopics.some((area) => area.toLowerCase() === normalizedTopic);
+    if (alreadyExistsInDefault || alreadyExistsInCustom) {
+      setCustomTopicError("This topic already exists.");
+      return;
+    }
+
+    setCustomTopics((prev) => [...prev, topic]);
+    setFormData((prev) => ({ ...prev, focusAreas: [...prev.focusAreas, topic] }));
+    closeCustomTopicModal();
   }
 
   function validateResumeFile(file) {
@@ -429,7 +474,7 @@ function DashboardPage() {
                   <span className="font-normal text-[#8197bb]">(Select all that apply)</span>
                 </p>
                 <div className="flex flex-wrap gap-2.5">
-                  {FOCUS_AREAS.map((area) => (
+                  {[...FOCUS_AREAS, ...customTopics].map((area) => (
                     <button
                       key={area}
                       type="button"
@@ -450,6 +495,7 @@ function DashboardPage() {
                   ))}
                   <button
                     type="button"
+                    onClick={openCustomTopicModal}
                     className="flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-[rgba(145,172,255,0.25)] px-3 py-1.5 text-xs text-[#5a7299] transition hover:border-[rgba(145,172,255,0.45)] hover:text-[#7b90b8]"
                   >
                     <PlusIcon /> Add Custom Topic
@@ -460,7 +506,7 @@ function DashboardPage() {
               {/* Upload Resume */}
               <div>
                 <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
-                  Upload Resume <span className="font-normal text-[#8197bb]">(PDF/DOCX)</span>
+                  Upload Resume <span className="font-normal text-[#8197bb]">(Optional, PDF/DOCX)</span>
                 </p>
                 <div
                   role="button"
@@ -566,7 +612,7 @@ function DashboardPage() {
                 {recentInterviews.slice(0, 4).map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => navigate(`/reports/${item.id}`)}
+                    onClick={() => navigate(getInterviewNavigationPath(item))}
                     className="flex cursor-pointer items-center gap-3 rounded-xl border border-[rgba(145,172,255,0.1)] bg-[rgba(7,13,30,0.45)] px-4 py-3 transition hover:border-[rgba(145,172,255,0.25)] hover:bg-[rgba(7,13,30,0.65)]"
                   >
                     {/* Company logo */}
@@ -604,6 +650,47 @@ function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {isCustomTopicModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02040b]/70 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-[rgba(145,172,255,0.2)] bg-[rgba(10,17,35,0.98)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.5)]">
+            <h3 className="text-lg font-semibold text-[#f4f7ff]">Add Custom Topic</h3>
+            <p className="mt-1 text-xs text-[#8fa3c8]">Create a focus area and add it as a selectable chip.</p>
+
+            <label className="mt-4 grid gap-1 text-xs font-semibold text-[#d7e5ff]">
+              Topic Name
+              <input
+                type="text"
+                value={customTopicInput}
+                onChange={(event) => {
+                  setCustomTopicInput(event.target.value);
+                  if (customTopicError) setCustomTopicError("");
+                }}
+                placeholder="e.g. Distributed Systems"
+                className="h-10 w-full rounded-xl border border-[rgba(145,172,255,0.2)] bg-[rgba(7,13,30,0.7)] px-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+              />
+            </label>
+            {customTopicError ? <p className="mt-2 text-xs text-[#ff9ca6]">{customTopicError}</p> : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeCustomTopicModal}
+                className="h-9 rounded-lg border border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.45)] px-3 text-xs font-medium text-[#c8d8f8] transition hover:border-[rgba(145,172,255,0.45)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomTopic}
+                className="h-9 rounded-lg bg-linear-to-r from-[#2f80ff] to-[#5b33ff] px-3 text-xs font-semibold text-white transition hover:brightness-110"
+              >
+                Add Topic
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

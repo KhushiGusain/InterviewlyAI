@@ -30,13 +30,13 @@ function StatusBadge({ status }) {
   if (normalizedStatus === "IN_PROGRESS") {
     return (
       <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-0.5 text-xs font-medium text-[#fbbf24]">
-        In Progress
+        Continue Interview
       </span>
     );
   }
   return (
     <span className="rounded-full border border-[#60a5fa]/40 bg-[#60a5fa]/10 px-3 py-0.5 text-xs font-medium text-[#93c5fd]">
-      Created
+      Start
     </span>
   );
 }
@@ -95,6 +95,15 @@ function InterviewsPage() {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
     navigate("/login", { replace: true });
+  }
+
+  function getInterviewNavigationPath(item) {
+    const status = String(item?.status || "").toUpperCase();
+    if (status === "COMPLETED") return `/reports/${item.id}`;
+    if (status === "IN_PROGRESS" || status === "NOT_STARTED" || status === "CREATED") {
+      return `/interview/${item.id}`;
+    }
+    return `/interview/${item.id}`;
   }
 
   return (
@@ -158,7 +167,7 @@ function InterviewsPage() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => navigate(`/reports/${item.id}`)}
+                onClick={() => navigate(getInterviewNavigationPath(item))}
                 className="flex w-full items-center gap-3 rounded-xl border border-[rgba(145,172,255,0.1)] bg-[rgba(7,13,30,0.45)] px-4 py-3 text-left transition hover:border-[rgba(145,172,255,0.25)] hover:bg-[rgba(7,13,30,0.65)]"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(78,141,255,0.2)] text-sm font-bold text-[#9ec3ff]">

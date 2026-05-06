@@ -1,62 +1,148 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
+
+function sessionKey(interviewId) {
+  return `interviewly_interview_session:${interviewId}`;
+}
+
+function readPersistedSession(interviewId) {
+  if (!interviewId) return null;
+  try {
+    const raw = sessionStorage.getItem(sessionKey(interviewId));
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+    return {
+      question: typeof data.question === "string" ? data.question : "",
+      stage: typeof data.stage === "string" ? data.stage : null,
+      answer: typeof data.answer === "string" ? data.answer : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedSession(interviewId, partial) {
+  if (!interviewId) return;
+  try {
+    const prev = readPersistedSession(interviewId) || {
+      question: "",
+      stage: null,
+      answer: "",
+    };
+    const next = { ...prev, ...partial };
+    sessionStorage.setItem(sessionKey(interviewId), JSON.stringify(next));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function clearPersistedSession(interviewId) {
+  if (!interviewId) return;
+  try {
+    sessionStorage.removeItem(sessionKey(interviewId));
+  } catch {
+    /* ignore */
+  }
+}
 
 function InterviewPage() {
   const { id: interviewId } = useParams();
   const navigate = useNavigate();
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [question, setQuestion] = useState(
+    () => readPersistedSession(interviewId)?.question ?? ""
+  );
+  const [answer, setAnswer] = useState(
+    () => readPersistedSession(interviewId)?.answer ?? ""
+  );
   const [loading, setLoading] = useState(false);
-  const [stage, setStage] = useState("INTRO");
-  const [answeredCount, setAnsweredCount] = useState(0);
+  const [stage, setStage] = useState(
+    () => readPersistedSession(interviewId)?.stage ?? null
+  );
   const [submitError, setSubmitError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [isBackendSynced, setIsBackendSynced] = useState(false);
+  const prevInterviewIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!interviewId) return;
+    // Cache is only for instant paint while server state loads.
+    const next = readPersistedSession(interviewId);
+    setQuestion(next?.question ?? "");
+    setStage(next?.stage ?? null);
+    setAnswer(next?.answer ?? "");
+    setSubmitError("");
+    setLoadError("");
+    setIsBackendSynced(false);
+  }, [interviewId]);
 
   function getStageLabel(stageValue) {
-    const normalized = String(stageValue || "").toUpperCase();
+    if (stageValue == null || stageValue === "") {
+      return "Session";
+    }
+    const normalized = String(stageValue).toUpperCase();
     if (normalized.includes("TECH")) return "Technical Round";
     if (normalized.includes("BEHAV")) return "Behavioral Round";
-    return "Intro Round";
+    if (normalized.includes("INTRO")) return "Intro Round";
+    return normalized.replaceAll("_", " ");
   }
+
+  function applySessionState(response, nextAnswer) {
+    const backendQuestion = response?.question ?? "";
+    const backendStage = response?.stage ?? null;
+    setQuestion(backendQuestion);
+    setStage(backendStage);
+    setAnswer(nextAnswer);
+    writePersistedSession(interviewId, {
+      question: backendQuestion,
+      stage: backendStage,
+      answer: nextAnswer,
+    });
+  }
+
+  useEffect(() => {
+    if (!interviewId) return;
+    const idChanged = prevInterviewIdRef.current !== interviewId;
+    prevInterviewIdRef.current = interviewId;
+    if (idChanged) return;
+    writePersistedSession(interviewId, { answer });
+  }, [interviewId, answer]);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchFirstQuestion() {
+    async function syncSessionFromBackend() {
       setLoading(true);
+      setLoadError("");
       try {
-        const response = await apiRequest(`/interview/${interviewId}/start`, {
-          method: "POST",
+        const response = await apiRequest(`/interview/${interviewId}/session`, {
+          method: "GET",
         });
-        if (isMounted) {
-          if (response?.status === "COMPLETED") {
-            navigate(`/reports/${interviewId}`, { replace: true });
-            return;
-          }
+        if (!isMounted) return;
 
-          if (response?.status === "IN_PROGRESS") {
-            setQuestion(response?.lastQuestion || response?.question || "");
-            setStage(response?.stage || response?.round || "INTRO");
-            return;
-          }
+        const status = response?.status;
 
-          setQuestion(response?.question || "");
-          setStage(response?.stage || response?.round || "INTRO");
+        if (status === "COMPLETED") {
+          clearPersistedSession(interviewId);
+          navigate(`/reports/${interviewId}`, { replace: true });
+          return;
         }
-      } catch {
+        applySessionState(response, answer);
+      } catch (err) {
         if (isMounted) {
-          setQuestion("");
-          setStage("INTRO");
+          setLoadError(err?.message || "Could not load interview session.");
         }
       } finally {
         if (isMounted) {
           setLoading(false);
+          setIsBackendSynced(true);
         }
       }
     }
 
     if (interviewId) {
-      fetchFirstQuestion();
+      syncSessionFromBackend();
     }
 
     return () => {
@@ -78,15 +164,12 @@ function InterviewPage() {
       });
 
       if (response?.status === "COMPLETED") {
+        clearPersistedSession(interviewId);
         navigate(`/reports/${interviewId}`, { replace: true });
         return;
       }
 
-      setQuestion(response?.question || "");
-      setStage(response?.stage || response?.round || stage);
-      setAnswer("");
-      const nextCount = answeredCount + 1;
-      setAnsweredCount(nextCount);
+      applySessionState(response, "");
     } catch (error) {
       setSubmitError(error.message || "Failed to submit answer.");
     } finally {
@@ -110,9 +193,17 @@ function InterviewPage() {
             Current Question
           </p>
           <p className="text-base leading-relaxed text-[#dce6ff]">
-            {loading ? "Loading question..." : question || "No question available."}
+            {loading && !question
+              ? "Loading question..."
+              : question || (loadError ? "Could not sync with the server yet." : "No question available.")}
           </p>
         </section>
+        {!isBackendSynced ? (
+          <p className="mt-3 text-xs text-[#8fa3c8]">Syncing latest session from server...</p>
+        ) : null}
+        {loadError ? (
+          <p className="mt-3 text-sm text-[#ff9ca6]">{loadError}</p>
+        ) : null}
 
         <div className="mt-5">
           <label htmlFor="answer" className="mb-2 block text-sm font-medium text-[#c7d7f5]">
