@@ -2,6 +2,8 @@ package com.khushay.Interviewly.prompt;
 
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
+import com.khushay.Interviewly.model.FollowUpType;
+import com.khushay.Interviewly.model.QuestionCategory;
 import com.khushay.Interviewly.model.User;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,8 @@ public class PromptBuilder {
             String previousAnswer,
             boolean isFollowUp,
             List<String> questionHistory,
-            String questionTypeHint) {
+            QuestionCategory category,
+            FollowUpType followUpType) {
         List<String> areas = interview.getFocusAreas() != null ? interview.getFocusAreas() : List.of();
         String summary = interview.getResumeSummary() != null ? interview.getResumeSummary() : "";
         return buildQuestionPrompt(
@@ -41,7 +44,8 @@ public class PromptBuilder {
                 previousQuestion,
                 isFollowUp,
                 questionHistory,
-                questionTypeHint);
+                category,
+                followUpType);
     }
 
     /**
@@ -51,8 +55,7 @@ public class PromptBuilder {
      * @param isFollowUp       when {@code true} the model must emit a follow-up to {@code previousAnswer};
      *                         otherwise a new base question
      * @param questionHistory  last 2–3 questions already asked (newest first); may be null or empty
-     * @param questionTypeHint target category for the current question. One of:
-     *                         CONCEPT, PROBLEM_SOLVING, ROLE_BASED, SCENARIO, RESUME
+     * @param category target question category from the interview plan.
      */
     public String buildQuestionPrompt(
             InterviewStage stage,
@@ -66,226 +69,72 @@ public class PromptBuilder {
             String previousQuestion,
             boolean isFollowUp,
             List<String> questionHistory,
-            String questionTypeHint) {
+            QuestionCategory category,
+            FollowUpType followUpType) {
 
-        String name        = blankToPlaceholder(userName, "the candidate");
-        String roleLine    = StringUtils.hasText(role)          ? role.trim()          : "(not specified)";
-        String companyLine = StringUtils.hasText(company)       ? company.trim()       : null;
-        String jdLine      = StringUtils.hasText(jobDescription) ? jobDescription.trim() : null;
-        String resumeLine  = StringUtils.hasText(resumeSummary) ? resumeSummary.trim() : "(not provided)";
+        String name = blankToPlaceholder(userName, "the candidate");
+        String roleLine = StringUtils.hasText(role) ? role.trim() : "(not specified)";
+        String companyLine = StringUtils.hasText(company) ? company.trim() : null;
+        String jdLine = StringUtils.hasText(jobDescription) ? jobDescription.trim() : null;
+        String resumeLine = StringUtils.hasText(resumeSummary) ? resumeSummary.trim() : "(not provided)";
         List<String> areas = normalizeFocusAreas(focusAreas);
+        QuestionCategory currentCategory = category != null ? category : QuestionCategory.ROLE_FUNDAMENTAL;
 
-        StringBuilder sb = new StringBuilder(5120);
+        StringBuilder sb = new StringBuilder(2600);
 
-        // ── CONTEXT ──────────────────────────────────────────────────────────
         sb.append("=====================================\n");
         sb.append("INTERVIEW CONTEXT\n");
         sb.append("=====================================\n\n");
         sb.append("- Candidate name: ").append(name).append('\n');
         sb.append("- Role: ").append(roleLine).append('\n');
+        sb.append("- Interview stage: ").append(stage.name()).append('\n');
         if (companyLine != null) {
             sb.append("- Company: ").append(companyLine).append('\n');
         }
         if (jdLine != null) {
-            sb.append("- Job description (prioritize these skills):\n  ").append(jdLine).append('\n');
+            sb.append("- Job description summary:\n  ").append(jdLine).append('\n');
         }
-        sb.append("- Interview stage: ").append(stage.name()).append('\n');
         if (!areas.isEmpty()) {
             sb.append("- Focus areas: ").append(String.join(", ", areas)).append('\n');
         }
-        sb.append('\n');
-        sb.append("PRIORITY RULES:\n\n");
-        sb.append("1. Stage rules have highest priority\n");
-        sb.append("2. Question type must match stage\n");
-        sb.append("3. Resume and focus areas are secondary\n");
-        sb.append("4. Do NOT override stage rules because of resume or focus areas\n\n");
+        sb.append("- Resume summary: ").append(resumeLine).append("\n\n");
 
-        // ── RESUME ───────────────────────────────────────────────────────────
-        sb.append("RESUME SUMMARY\n");
-        sb.append("-------------------------------------\n");
-        sb.append(resumeLine).append('\n');
-        sb.append('\n');
-        sb.append("IMPORTANT — how to use the resume:\n");
-        sb.append("- It is ONE source of context, not the only source.\n");
-        sb.append("- Use it occasionally for project-based questions (max 1–2 per interview).\n");
-        sb.append("- DO NOT base all questions on the resume.\n");
-        sb.append("- Most questions should be conceptual, role-based, or scenario-based.\n\n");
-
-        // ── PREVIOUS ANSWER ──────────────────────────────────────────────────
-        if (StringUtils.hasText(previousAnswer)) {
-            sb.append("CANDIDATE'S PREVIOUS ANSWER\n");
-            sb.append("-------------------------------------\n");
-            sb.append(previousAnswer.trim()).append('\n');
-            sb.append('\n');
-        }
-
-        // ── AI ROLE ──────────────────────────────────────────────────────────
-        sb.append("=====================================\n");
-        sb.append("YOUR ROLE\n");
-        sb.append("=====================================\n\n");
-        sb.append("You are an experienced professional interviewer conducting a real, structured interview.\n");
-        sb.append("- Be direct, professional, and concise.\n");
-        sb.append("- Ask ONE question at a time.\n");
-        sb.append("- Vary the type and depth of questions across the interview.\n\n");
-        sb.append("- Questions should resemble real interview questions asked in actual companies.\n");
-        sb.append("- Prefer practical, commonly asked questions over abstract or overly academic ones.\n\n");
-
-        // ── INTERVIEW FLOW GUIDELINE ─────────────────────────────────────────
-        sb.append("=====================================\n");
-        sb.append("INTERVIEW FLOW GUIDELINE\n");
-        sb.append("=====================================\n\n");
-        sb.append("- Early questions should be easier and more introductory.\n");
-        sb.append("- Gradually increase depth as the interview progresses.\n");
-        sb.append("- Move from general -> specific -> deep.\n");
-        sb.append("- Do NOT start with very hard or niche questions.\n\n");
-
-        // ── EVALUATION INTENT ────────────────────────────────────────────────
-        sb.append("=====================================\n");
-        sb.append("EVALUATION INTENT\n");
-        sb.append("=====================================\n\n");
-        sb.append("- Each question should clearly test a specific skill.\n");
-        sb.append("- Possible skills to test:\n");
-        sb.append("  - conceptual understanding\n");
-        sb.append("  - problem-solving ability\n");
-        sb.append("  - system thinking\n");
-        sb.append("  - practical knowledge\n");
-        sb.append("- Avoid vague or surface-level questions.\n\n");
-
-        // ── COMPANY STYLE ALIGNMENT ──────────────────────────────────────────
-        if (companyLine != null) {
-            String companyLower = companyLine.toLowerCase();
-            sb.append("=====================================\n");
-            sb.append("COMPANY STYLE ALIGNMENT\n");
-            sb.append("=====================================\n\n");
-            sb.append("- Company context: ").append(companyLine).append('\n');
-            sb.append("- Align question style with this company's interview expectations.\n");
-            sb.append("- Example style references:\n");
-            sb.append("  - Amazon -> practical, decision/trade-off driven questions.\n");
-            sb.append("  - Google -> problem-solving and strong fundamentals.\n");
-            sb.append("  - Startups -> system + implementation execution focus.\n");
-
-            if (companyLower.contains("amazon")) {
-                sb.append("- For this company, emphasize practical constraints and trade-off reasoning.\n");
-            } else if (companyLower.contains("google")) {
-                sb.append("- For this company, emphasize problem-solving depth and fundamentals.\n");
-            } else if (companyLower.contains("startup")) {
-                sb.append("- For this company, emphasize end-to-end system + implementation thinking.\n");
-            } else {
-                sb.append("- Adapt style to common patterns for this company while staying practical and role-relevant.\n");
-            }
-            sb.append('\n');
-        }
-
-        // ── STAGE RULES ───────────────────────────────────────────────────────
         sb.append("=====================================\n");
         sb.append("STAGE RULES\n");
         sb.append("=====================================\n\n");
-        sb.append("CRITICAL:\n");
-        sb.append("- You MUST strictly follow the stage.\n");
-        sb.append("- If stage is INTRO -> only intro questions allowed\n");
-        sb.append("- If stage is TECHNICAL -> only technical questions allowed\n");
-        sb.append("- If stage is BEHAVIORAL -> only behavioral questions allowed\n");
-        sb.append("- Violating this is NOT allowed\n\n");
-        appendStageRules(sb, stage, areas, roleLine, jdLine);
+        sb.append("- You MUST strictly follow the current stage.\n");
+        sb.append("- INTRO: only introduction-style questions.\n");
+        sb.append("- TECHNICAL: only technical/role/problem questions.\n");
+        sb.append("- BEHAVIORAL: only behavior/situational questions.\n");
+        sb.append("- END: only a short closing question/remark.\n\n");
 
-        // ── QUESTION DIVERSITY ────────────────────────────────────────────────
         sb.append("=====================================\n");
-        sb.append("QUESTION DISTRIBUTION RULES (IMPORTANT)\n");
+        sb.append("CURRENT QUESTION CATEGORY\n");
         sb.append("=====================================\n\n");
-        sb.append("Distribute questions across ALL of these categories — do NOT use only one:\n\n");
-        sb.append("  1. Conceptual / theoretical  (OOP, DSA, design patterns, networking…)\n");
-        sb.append("  2. Problem-solving / algorithmic  (time/space complexity, trade-offs…)\n");
-        sb.append("  3. Role-based / JD-driven  (skills explicitly mentioned in the job description)\n");
-        sb.append("  4. Scenario / system-design  (\"How would you design…\", \"What would you do if…\")\n");
-        sb.append("  5. Resume / project-based  (max 1–2 questions across the ENTIRE interview)\n\n");
-        sb.append("STRICT rules:\n");
-        sb.append("- Do NOT ask multiple questions about the same project.\n");
-        sb.append("- Do NOT repeat the same question structure (e.g. avoid repeating \"Explain how you used X in your project\").\n");
-        sb.append("- If focus areas are provided, spread questions across their CONCEPTS, not just their project usage.\n\n");
+        sb.append("- Category: ").append(currentCategory.name()).append('\n');
+        sb.append("- Do NOT change category.\n");
+        sb.append("- ").append(categoryInstruction(currentCategory)).append("\n\n");
 
-        // ── CURRENT QUESTION TARGET ───────────────────────────────────────────
-        String targetType = normalizeQuestionTypeHint(questionTypeHint);
-        sb.append("=====================================\n");
-        sb.append("CURRENT QUESTION TARGET\n");
-        sb.append("=====================================\n\n");
-        sb.append("- This question must be of type: ").append(targetType).append('\n');
-        sb.append("- Strictly follow it.\n");
-        sb.append("- Do NOT switch category.\n\n");
-
-        // ── FOCUS AREA ENFORCEMENT ────────────────────────────────────────────
-        if (!areas.isEmpty()) {
-            sb.append("=====================================\n");
-            sb.append("FOCUS AREA ENFORCEMENT\n");
-            sb.append("=====================================\n\n");
-            sb.append("Focus areas for THIS interview: ").append(String.join(", ", areas)).append('\n');
-            sb.append('\n');
-            sb.append("In the TECHNICAL stage, map each focus area to explicit question types.\n");
-            sb.append("For each area, ask at least two different styles (not the same style repeatedly).\n\n");
-            sb.append("Examples:\n");
-            sb.append("- DSA:\n");
-            sb.append("  - Ask about algorithms, complexity analysis, and edge cases.\n");
-            sb.append("  - Ask problem-solving questions with constraints and trade-offs.\n");
-            sb.append("- OOP:\n");
-            sb.append("  - Ask about principles (encapsulation, abstraction, inheritance, polymorphism, SOLID).\n");
-            sb.append("  - Ask design-based questions (modeling classes, choosing patterns, design trade-offs).\n");
-            sb.append("- SYSTEM DESIGN / ARCHITECTURE:\n");
-            sb.append("  - Ask about component design, scalability, reliability, and bottlenecks.\n");
-            sb.append("  - Ask scenario-based design decisions and trade-offs.\n");
-            sb.append("- DATABASE / SQL:\n");
-            sb.append("  - Ask about schema design, indexing, query optimization, and transactions.\n");
-            sb.append("  - Ask practical debugging/tuning scenarios.\n");
-            sb.append("- API / BACKEND:\n");
-            sb.append("  - Ask about REST conventions, validation, error handling, and security.\n");
-            sb.append("  - Ask endpoint/system behavior under load and failure scenarios.\n");
-            sb.append('\n');
-            sb.append("DO NOT always relate focus areas to the candidate's past projects.\n");
-            sb.append("Ensure variation within each focus area before moving on.\n");
-            sb.append("Rotate across focus areas — do not hammer a single one repeatedly.\n\n");
-        }
-
-        // ── ROLE + JD ENFORCEMENT ─────────────────────────────────────────────
-        if (InterviewStage.TECHNICAL.equals(stage)) {
-            sb.append("=====================================\n");
-            sb.append("ROLE + JD ENFORCEMENT (TECHNICAL STAGE)\n");
-            sb.append("=====================================\n\n");
-            sb.append("For the '").append(roleLine).append("' role, include questions covering:\n");
-            if (jdLine != null) {
-                sb.append("  - Skills and responsibilities from the job description (listed above).\n");
-            }
-            sb.append("  - Core expectations of this role (e.g. for Backend: APIs, databases, system design;\n");
-            sb.append("    for Frontend: component architecture, performance, state management;\n");
-            sb.append("    for Data: pipelines, SQL, ML concepts — adapt to the actual role).\n\n");
-        }
-
-        // ── FOLLOW-UP LOGIC ───────────────────────────────────────────────────
         sb.append("=====================================\n");
         sb.append("FOLLOW-UP LOGIC\n");
         sb.append("=====================================\n\n");
-        sb.append("Follow-up should be asked ONLY if:\n");
-        sb.append("- the answer introduces a strong technical concept worth deeper probing, OR\n");
-        sb.append("- the answer mentions a clear decision, trade-off, or alternative comparison.\n");
-        sb.append("- Otherwise, move to a new topic.\n");
-        sb.append("- Avoid trivial follow-ups.\n\n");
+        sb.append("- Ask ONE focused question only.\n");
         if (isFollowUp && StringUtils.hasText(previousAnswer)) {
-            sb.append("This turn IS a follow-up.\n");
-            sb.append("- The previous answer introduced a strong concept or trade-off worth exploring deeper.\n");
-            sb.append("- Ask ONE focused follow-up anchored to what was just said.\n");
-            sb.append("- The follow-up must test depth (reasoning, trade-off, edge case, or implementation detail).\n");
-            sb.append("- After this follow-up, the interview will move to a NEW topic — so make this one count.\n");
-            sb.append("- Do NOT ask generic prompts (e.g. \"can you explain more?\") unless tied to a specific claim.\n\n");
+            FollowUpType currentFollowUpType = followUpType != null ? followUpType : FollowUpType.DEEP_DIVE;
+            sb.append("- This turn is a follow-up.\n");
+            sb.append("- Follow-up intent: ").append(currentFollowUpType.name()).append('\n');
+            sb.append("- ").append(followUpIntentInstruction(currentFollowUpType)).append('\n');
+            sb.append("- Sound conversational and interviewer-like, not robotic.\n");
+            sb.append("- Do NOT use generic probes like \"Can you explain more?\".\n");
+            sb.append("- Reference specific claims, reasoning, implementation choices, or trade-offs from the answer.\n");
+            sb.append("- Keep the follow-up concise and natural.\n");
+            sb.append("- This is the only follow-up for this topic; after this, move to the next planned topic.\n");
+            sb.append("- Previous answer:\n  ").append(previousAnswer.trim()).append("\n\n");
         } else {
-            sb.append("This turn is a NEW BASE question.\n");
-            sb.append("- Follow-ups should NOT happen for every answer.\n");
-            sb.append("- Use a follow-up ONLY when the answer introduces a strong concept/trade-off worth probing.\n");
-            sb.append("- After ONE follow-up per topic, always move to a new topic.\n");
-            sb.append("- Open a fresh line of inquiry appropriate to the stage.\n");
-            if (StringUtils.hasText(previousAnswer)) {
-                sb.append("- If the previous answer is generic, shallow, or non-technical, do not probe it further.\n");
-            }
-            sb.append('\n');
+            sb.append("- This turn is a new base question.\n");
+            sb.append("- Keep it realistic, role-relevant, and naturally worded.\n\n");
         }
 
-        // ── RECENT QUESTION HISTORY ───────────────────────────────────────────
         List<String> recentQuestions = (questionHistory != null && !questionHistory.isEmpty())
                 ? questionHistory.stream()
                         .filter(StringUtils::hasText)
@@ -295,40 +144,22 @@ public class PromptBuilder {
                 : List.of();
 
         sb.append("=====================================\n");
-        sb.append("RECENT QUESTIONS CONTEXT\n");
+        sb.append("ANTI-REPETITION\n");
         sb.append("=====================================\n\n");
-        if (recentQuestions.isEmpty()) {
-            sb.append("Previously asked questions: (none yet — this is the start of the interview)\n\n");
-        } else {
-            sb.append("Previously asked questions (most recent first):\n");
+        sb.append("- Do NOT repeat topic, structure, or wording from recent questions.\n");
+        if (!recentQuestions.isEmpty()) {
+            sb.append("- Recent questions (most recent first):\n");
             for (int i = 0; i < recentQuestions.size(); i++) {
                 sb.append("  ").append(i + 1).append(". ").append(recentQuestions.get(i)).append('\n');
             }
-            sb.append('\n');
         }
-        sb.append("Instructions:\n");
-        sb.append("- Analyze the topics and structure of the questions listed above.\n");
-        sb.append("- The next question MUST explore a different dimension, concept, or topic.\n");
-        sb.append("- Do NOT repeat a similar type of question (e.g. do not ask another project question\n");
-        sb.append("  if the last one was project-based; do not ask another OOP question if one was just asked).\n");
-        sb.append("- Ensure continuous variety and progression throughout the interview.\n\n");
-
-        // ── ANTI-REPETITION ───────────────────────────────────────────────────
-        sb.append("=====================================\n");
-        sb.append("ANTI-REPETITION RULES\n");
-        sb.append("=====================================\n\n");
-        sb.append("- Do NOT ask multiple questions about the same project from the resume.\n");
-        sb.append("- Do NOT repeat the same question structure or phrasing pattern.\n");
-        sb.append("- Do NOT ask questions that are trivially similar to the previous question.\n");
         if (StringUtils.hasText(previousQuestion)) {
-            sb.append("- The previous question was:\n  \"")
+            sb.append("- Previous question:\n  \"")
                     .append(previousQuestion.trim().replace("\"", "\\\""))
                     .append("\"\n");
-            sb.append("  Do NOT repeat or lightly rephrase it.\n");
         }
         sb.append('\n');
 
-        // ── OUTPUT RULES ──────────────────────────────────────────────────────
         sb.append("=====================================\n");
         sb.append("OUTPUT RULES (STRICT)\n");
         sb.append("=====================================\n\n");
@@ -343,56 +174,40 @@ public class PromptBuilder {
         return sb.toString();
     }
 
-    private static void appendStageRules(StringBuilder sb, InterviewStage stage, List<String> areas,
-            String role, String jdLine) {
-        switch (stage) {
-            case INTRO -> {
-                sb.append("Stage: INTRO\n");
-                sb.append("- This is the FIRST interaction.\n");
-                sb.append("- ALWAYS start with a greeting using candidate name.\n\n");
-                sb.append("STRICT RULE:\n");
-                sb.append("- The FIRST question MUST be:\n");
-                sb.append("  \"Hi <name>, nice to meet you. Can you briefly introduce yourself?\"\n\n");
-                sb.append("- Do NOT ask any other type of question for the first intro.\n");
-                sb.append("- Do NOT ask technical or role-based questions.\n\n");
-                sb.append("Follow-up behavior:\n");
-                sb.append("- After the introduction, you may ask ONE follow-up:\n");
-                sb.append("  - about past experience OR\n");
-                sb.append("  - about a project mentioned\n\n");
-                sb.append("- Keep tone natural and conversational.\n\n");
-            }
-            case TECHNICAL -> {
-                sb.append("Stage: TECHNICAL\n");
-                sb.append("- Ask technical questions only — no soft-skill or behavioral questions.\n");
-                sb.append("- Spread questions across: concepts, problem-solving, role expectations");
-                if (!areas.isEmpty()) {
-                    sb.append(", and focus areas (").append(String.join(", ", areas)).append(")");
-                }
-                sb.append(".\n");
-                sb.append("- At most 1 question may be project/resume-based.\n");
-                sb.append("- Vary depth: start moderate, increase with each question.\n\n");
-            }
-            case BEHAVIORAL -> {
-                sb.append("Stage: BEHAVIORAL\n");
-                sb.append("- Ask ONLY behavioral / experience questions.\n");
-                sb.append("- Do NOT ask any technical or theoretical questions.\n");
-                sb.append("- Focus on:\n");
-                sb.append("  - teamwork\n");
-                sb.append("  - conflict\n");
-                sb.append("  - leadership\n");
-                sb.append("  - decision making\n");
-                sb.append("  - challenges\n\n");
-                sb.append("Examples:\n");
-                sb.append("- Tell me about a time you faced a challenge.\n");
-                sb.append("- Describe a situation where you had to make a difficult decision.\n");
-                sb.append("- Tell me about a time you worked in a team.\n\n");
-            }
-            case END -> {
-                sb.append("Stage: END\n");
-                sb.append("- One brief, polite closing remark or question.\n");
-                sb.append("- No new technical deep-dive.\n\n");
-            }
-        }
+    private static String categoryInstruction(QuestionCategory category) {
+        return switch (category) {
+            case INTRODUCTION -> "Ask a warm, brief introduction question.";
+            case RESUME_EXPERIENCE -> "Ask about past experience from resume in a concrete way.";
+            case ROLE_FUNDAMENTAL -> "Ask a core fundamentals question for the target role.";
+            case ROLE_SCENARIO -> "Ask a practical role-based scenario question.";
+            case DSA_CONCEPT -> "Ask a DSA concept question (complexity, data structures, trade-offs).";
+            case DSA_PROBLEM -> "Ask a realistic coding/problem-solving interview question.";
+            case OOP_CONCEPT -> "Ask an OOP principle question (encapsulation, abstraction, SOLID, etc.).";
+            case OOP_DESIGN -> "Ask an object-oriented design question with trade-offs.";
+            case BACKEND_FUNDAMENTAL -> "Ask backend fundamentals (APIs, architecture, reliability, security).";
+            case BACKEND_SCENARIO -> "Ask a backend production scenario with constraints.";
+            case FRONTEND_FUNDAMENTAL -> "Ask frontend fundamentals (state, rendering, performance, UX basics).";
+            case FRONTEND_SCENARIO -> "Ask a frontend scenario question with real product constraints.";
+            case DATABASE_CONCEPT -> "Ask a database concept question (indexing, transactions, schema, joins).";
+            case DATABASE_SCENARIO -> "Ask a practical SQL/database troubleshooting or design scenario.";
+            case PROJECT_DEEP_DIVE -> "Ask one focused deep-dive question on architecture/decisions/impact.";
+            case TEAMWORK -> "Ask a behavioral teamwork question with a real example.";
+            case CONFLICT -> "Ask a behavioral conflict-resolution question.";
+            case OWNERSHIP -> "Ask about accountability and ownership in a real situation.";
+            case STRENGTH_WEAKNESS -> "Ask a candid strengths/weaknesses reflection question.";
+            case FAILURE -> "Ask about a failure, learning, and corrective actions.";
+            case LEADERSHIP -> "Ask a leadership/influence question with outcomes.";
+            case END -> "Ask a brief and polite closing question/remark.";
+        };
+    }
+
+    private static String followUpIntentInstruction(FollowUpType type) {
+        return switch (type) {
+            case CLARIFICATION -> "Ask a precise clarification about the incomplete or vague part of the answer.";
+            case DEEP_DIVE -> "Probe deeper technical understanding through concrete implementation or reasoning details.";
+            case CHALLENGE -> "Challenge the claim using trade-offs, edge cases, alternatives, or constraints.";
+            case NONE -> "No follow-up intent; move to the next topic.";
+        };
     }
 
     private static String blankToPlaceholder(String value, String placeholder) {
@@ -408,16 +223,6 @@ public class PromptBuilder {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    private static String normalizeQuestionTypeHint(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "CONCEPT";
-        }
-        return switch (value.trim().toUpperCase()) {
-            case "CONCEPT", "PROBLEM_SOLVING", "ROLE_BASED", "SCENARIO", "RESUME" -> value.trim().toUpperCase();
-            default -> "CONCEPT";
-        };
     }
 
 }

@@ -1,8 +1,12 @@
 package com.khushay.Interviewly.service;
 
 import com.khushay.Interviewly.dto.EvaluationJob;
+import com.khushay.Interviewly.dto.FollowUpDecision;
 import com.khushay.Interviewly.model.Interview;
+import com.khushay.Interviewly.model.InterviewPlanItem;
 import com.khushay.Interviewly.model.InterviewStage;
+import com.khushay.Interviewly.model.FollowUpType;
+import com.khushay.Interviewly.model.QuestionCategory;
 import com.khushay.Interviewly.model.Response;
 import com.khushay.Interviewly.model.User;
 import com.khushay.Interviewly.prompt.PromptBuilder;
@@ -40,10 +44,12 @@ public class InterviewService {
     private final ResumeSummarizer resumeSummarizer;
     private final OpenAIService openAIService;
     private final PromptBuilder promptBuilder;
-    private final QuestionTypeStrategy questionTypeStrategy;
+    private final InterviewPlanService interviewPlanService;
+    private final FollowUpClassifierService followUpClassifierService;
     private final FallbackQuestionService fallbackQuestionService;
     private final EvaluationQueueProducer evaluationQueueProducer;
     private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
+    private final Map<UUID, List<InterviewPlanItem>> interviewPlansInMemory = new ConcurrentHashMap<>();
     private static final List<InterviewStage> STAGES = List.of(
             InterviewStage.INTRO,
             InterviewStage.TECHNICAL,
@@ -134,8 +140,9 @@ public class InterviewService {
         interview.setFollowUpsUsedInStage(0);
         interview.setFollowUpsIssuedForCurrentBase(0);
         interview.setCompletedAt(null);
+        interviewPlansInMemory.computeIfAbsent(interviewId, id -> interviewPlanService.buildInterviewPlan(interview));
 
-        String firstQuestion = generateAiQuestion(interview, null, null, false);
+        String firstQuestion = generateAiQuestion(interview, null, null, false, FollowUpType.NONE);
         interview.setLastQuestionText(firstQuestion);
         interview.setQuestionIndex(1);
 
@@ -183,11 +190,14 @@ public class InterviewService {
         int maxBasesInStage = getMaxQuestionsForStage(currentStage);
         int baseQuestionsInStage = interview.getQuestionIndex();
 
-        boolean allowFollowUp = StringUtils.hasText(trimmedAnswer)
-                && shouldAskFollowUp(currentStage, trimmedAnswer)
-                && interview.getFollowUpsIssuedForCurrentBase() < 1
+        boolean followUpQuotaAvailable = interview.getFollowUpsIssuedForCurrentBase() < 1
                 && interview.getFollowUpsUsedInStage() < 2;
-        boolean nextIsFollowUp = allowFollowUp;
+        FollowUpDecision followUpDecision = (StringUtils.hasText(trimmedAnswer) && followUpQuotaAvailable)
+                ? followUpClassifierService.classifyFollowUp(currentStage, previousQuestion, trimmedAnswer)
+                : null;
+        boolean nextIsFollowUp = followUpDecision != null
+                && followUpDecision.getType() != null
+                && !FollowUpType.NONE.equals(followUpDecision.getType());
 
         if (!nextIsFollowUp && baseQuestionsInStage >= maxBasesInStage) {
             int stageIndex = stages.indexOf(currentStage);
@@ -202,6 +212,7 @@ public class InterviewService {
                     interview.setFollowUpsUsedInStage(0);
                     interview.setFollowUpsIssuedForCurrentBase(0);
                     interviewStagesInMemory.remove(interviewId);
+                    interviewPlansInMemory.remove(interviewId);
                     interviewRepository.save(interview);
                     return new AnswerResponse("END", InterviewStage.END);
                 }
@@ -209,7 +220,7 @@ public class InterviewService {
                 interview.setFollowUpsUsedInStage(0);
                 interview.setFollowUpsIssuedForCurrentBase(0);
 
-                String firstOfNextStage = generateAiQuestion(interview, previousQuestion, trimmedAnswer, false);
+                String firstOfNextStage = generateAiQuestion(interview, previousQuestion, trimmedAnswer, false, FollowUpType.NONE);
                 interview.setLastQuestionText(firstOfNextStage);
                 interview.setQuestionIndex(1);
 
@@ -224,11 +235,21 @@ public class InterviewService {
             interview.setFollowUpsUsedInStage(0);
             interview.setFollowUpsIssuedForCurrentBase(0);
             interviewStagesInMemory.remove(interviewId);
+            interviewPlansInMemory.remove(interviewId);
             interviewRepository.save(interview);
             return new AnswerResponse("END", InterviewStage.END);
         }
 
-        String nextQuestion = generateAiQuestion(interview, previousQuestion, trimmedAnswer, nextIsFollowUp);
+        FollowUpType followUpTypeForNextQuestion = nextIsFollowUp
+                ? followUpDecision.getType()
+                : FollowUpType.NONE;
+        String nextQuestion = generateAiQuestion(
+                interview,
+                previousQuestion,
+                trimmedAnswer,
+                nextIsFollowUp,
+                followUpTypeForNextQuestion
+        );
         interview.setLastQuestionText(nextQuestion);
         if (!nextIsFollowUp) {
             interview.setQuestionIndex(baseQuestionsInStage + 1);
@@ -251,17 +272,24 @@ public class InterviewService {
     }
 
     private String generateAiQuestion(
-            Interview interview, String previousQuestion, String previousAnswer, boolean isFollowUp) {
-        String questionType = questionTypeStrategy.getNextQuestionType(interview);
-        System.out.println("Question type: " + questionType);
+            Interview interview,
+            String previousQuestion,
+            String previousAnswer,
+            boolean isFollowUp,
+            FollowUpType followUpType
+    ) {
+        QuestionCategory category = getCurrentPlanItem(interview)
+                .map(InterviewPlanItem::getCategory)
+                .orElseGet(() -> getFallbackCategoryForStage(interview));
+        log.debug("Question category: {}", category);
         try {
             User candidate = interview.getUser();
             List<String> history = recentQuestionHistory(interview.getId());
             String prompt = promptBuilder.buildQuestionPrompt(
                     interview, candidate, interview.getCurrentStage(),
-                    previousQuestion, previousAnswer, isFollowUp, history, questionType);
+                    previousQuestion, previousAnswer, isFollowUp, history, category, followUpType);
             String question = openAIService.generateQuestion(prompt);
-            interview.setLastQuestionType(questionType);
+            interview.setLastQuestionType(category.name());
             return question;
         } catch (Exception ex) {
             log.warn("Question generation failed; using fallback. stage={}", interview.getCurrentStage(), ex);
@@ -274,9 +302,53 @@ public class InterviewService {
                     safeCandidateName(interview),
                     isFollowUp,
                     fallbackRotationKey(interview, isFollowUp));
-            interview.setLastQuestionType(questionType);
+            interview.setLastQuestionType(category.name());
             return fallbackQuestion;
         }
+    }
+
+    /**
+     * Resolves the current planned slot using the active stage and stage-local question index.
+     * questionIndex tracks asked base questions in the stage, so the active item is index-1 (or 0 before first ask).
+     */
+    private Optional<InterviewPlanItem> getCurrentPlanItem(Interview interview) {
+        if (interview == null || interview.getId() == null || interview.getCurrentStage() == null) {
+            return Optional.empty();
+        }
+        List<InterviewPlanItem> plan = interviewPlansInMemory.computeIfAbsent(
+                interview.getId(),
+                id -> interviewPlanService.buildInterviewPlan(interview)
+        );
+        if (plan == null || plan.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<InterviewPlanItem> stageItems = plan.stream()
+                .filter(item -> interview.getCurrentStage().equals(item.getStage()))
+                .collect(Collectors.toList());
+        if (stageItems.isEmpty()) {
+            return Optional.empty();
+        }
+
+        int stageQuestionIndex = interview.getQuestionIndex();
+        int itemIndex = stageQuestionIndex <= 0 ? 0 : stageQuestionIndex - 1;
+        if (itemIndex >= stageItems.size()) {
+            itemIndex = stageItems.size() - 1;
+        }
+        return Optional.of(stageItems.get(itemIndex));
+    }
+
+    private QuestionCategory getFallbackCategoryForStage(Interview interview) {
+        InterviewStage stage = interview.getCurrentStage();
+        if (stage == null) {
+            return QuestionCategory.INTRODUCTION;
+        }
+        return switch (stage) {
+            case INTRO -> QuestionCategory.INTRODUCTION;
+            case TECHNICAL -> QuestionCategory.ROLE_FUNDAMENTAL;
+            case BEHAVIORAL -> QuestionCategory.TEAMWORK;
+            case END -> QuestionCategory.END;
+        };
     }
 
     /** Returns the last 3 question texts for the interview (newest first). */
@@ -303,42 +375,6 @@ public class InterviewService {
                 + interview.getFollowUpsUsedInStage() * 3
                 + (isFollowUp ? 7 : 0)
                 + interview.getCurrentStage().ordinal() * 5;
-    }
-
-    /**
-     * Follow-up is allowed only when the answer likely contains a deeper technical concept
-     * or an explicit decision/trade-off signal.
-     */
-    private static boolean shouldAskFollowUp(InterviewStage stage, String answer) {
-        if (!StringUtils.hasText(answer)) {
-            return false;
-        }
-        String normalized = answer.toLowerCase(Locale.ROOT);
-
-        boolean hasTradeoffSignal = containsAny(normalized,
-                "trade-off", "tradeoff", "instead of", "rather than", "because", "pros and cons",
-                "latency", "throughput", "scalability", "consistency", "availability");
-
-        boolean hasTechnicalConcept = containsAny(normalized,
-                "algorithm", "complexity", "big-o", "o(", "memory", "cpu", "cache", "index",
-                "database", "query", "api", "microservice", "thread", "concurrency",
-                "synchronization", "architecture", "design pattern", "encapsulation", "polymorphism",
-                "inheritance", "abstraction", "solid", "edge case", "failure", "retry");
-
-        // In non-technical stages, require a stronger decision/trade-off signal for follow-ups.
-        if (!InterviewStage.TECHNICAL.equals(stage)) {
-            return hasTradeoffSignal;
-        }
-        return hasTradeoffSignal || hasTechnicalConcept;
-    }
-
-    private static boolean containsAny(String text, String... markers) {
-        for (String marker : markers) {
-            if (text.contains(marker)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
