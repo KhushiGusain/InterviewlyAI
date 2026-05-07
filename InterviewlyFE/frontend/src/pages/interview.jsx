@@ -59,7 +59,8 @@ function InterviewPage() {
   const [answer, setAnswer] = useState(
     () => readPersistedSession(interviewId)?.answer ?? ""
   );
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSessionLoading, setIsSessionLoading] = useState(false);
   const [stage, setStage] = useState(
     () => readPersistedSession(interviewId)?.stage ?? null
   );
@@ -77,7 +78,7 @@ function InterviewPage() {
     resetTranscript,
     unsupported,
   } = useSpeechRecognition();
-  const micState = loading ? "processing" : listening ? "listening" : "idle";
+  const micState = isSubmitting ? "processing" : listening ? "listening" : "idle";
 
   useEffect(() => {
     if (!interviewId) return;
@@ -146,7 +147,7 @@ function InterviewPage() {
     let isMounted = true;
 
     async function syncSessionFromBackend() {
-      setLoading(true);
+      setIsSessionLoading(true);
       setLoadError("");
       try {
         const response = await apiRequest(`/interview/${interviewId}/session`, {
@@ -168,7 +169,7 @@ function InterviewPage() {
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+          setIsSessionLoading(false);
           setIsBackendSynced(true);
         }
       }
@@ -191,7 +192,7 @@ function InterviewPage() {
 
     stopListening();
     setSubmitError("");
-    setLoading(true);
+    setIsSubmitting(true);
     try {
       const response = await apiRequest(`/interview/${interviewId}/answer`, {
         method: "POST",
@@ -213,7 +214,7 @@ function InterviewPage() {
     } catch (error) {
       setSubmitError(error.message || "Failed to submit answer.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   }
 
@@ -265,9 +266,9 @@ function InterviewPage() {
           <div className="mt-10 text-center">
             <p className="text-xs font-semibold tracking-[0.28em] text-[#8f70ff]">AI INTERVIEWER IS ASKING</p>
             <h2 className="mx-auto mt-4 max-w-3xl text-xl leading-snug text-[#edf3ff]">
-              {loading && !question
-                ? "Loading question..."
-                : question || (loadError ? "Could not sync with the server yet." : "No question available.")}
+              {isSessionLoading && !question
+                ? "Preparing your first interview question..."
+                : question || (loadError ? "Could not sync with the server yet." : "Waiting for the interviewer to begin.")}
             </h2>
             <div className="mx-auto mt-6 flex w-full max-w-lg items-end justify-center gap-1 opacity-80">
               {Array.from({ length: 48 }).map((_, index) => (
@@ -314,7 +315,9 @@ function InterviewPage() {
                 ? "Listening..."
                 : micState === "processing"
                   ? "Submitting response..."
-                  : "Tap to start speaking"}
+                  : isSessionLoading && !question
+                    ? "Getting things ready..."
+                    : "Tap to start speaking"}
             </p>
             {unsupported ? <p className="mt-2 text-xs text-[#ff9ca6]">Voice input works best in Chrome</p> : null}
           </div>
@@ -326,7 +329,7 @@ function InterviewPage() {
                 key={answer || "caption-placeholder"}
                 className="caption-text text-base leading-relaxed text-[#dbe6ff]"
               >
-                {answer || "Your spoken response will appear here in real-time..."}
+                {answer || ""}
               </p>
             </div>
           </div>
@@ -349,10 +352,10 @@ function InterviewPage() {
             <button
               type="button"
               onClick={handleSubmitAnswer}
-              disabled={loading || !answer.trim()}
+              disabled={isSubmitting || !answer.trim()}
               className="inline-flex min-w-44 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#5f32ff] to-[#7659ff] px-8 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
             >
-              {loading ? (
+              {isSubmitting ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
                   Processing...
