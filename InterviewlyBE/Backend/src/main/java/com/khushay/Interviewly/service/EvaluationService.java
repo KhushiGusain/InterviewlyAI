@@ -3,19 +3,9 @@ package com.khushay.Interviewly.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khushay.Interviewly.dto.EvaluationResult;
-import com.khushay.Interviewly.event.ResponseSavedEvent;
-import com.khushay.Interviewly.model.Evaluation;
-import com.khushay.Interviewly.model.Interview;
-import com.khushay.Interviewly.model.Response;
-import com.khushay.Interviewly.repository.EvaluationRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -32,11 +22,8 @@ public class EvaluationService {
                     0,
                     "No meaningful content",
                     "Answer is invalid or unclear. Please provide a structured and relevant answer.");
-    private static final Logger log = LoggerFactory.getLogger(EvaluationService.class);
-
     private final OpenAIService openAIService;
     private final ObjectMapper objectMapper;
-    private final EvaluationRepository evaluationRepository;
 
     public EvaluationResult evaluateAnswer(
             String question,
@@ -57,34 +44,6 @@ public class EvaluationService {
         String prompt = buildPrompt(question, answer, role, focusAreas);
         String rawResponse = openAIService.generateTextResponse(prompt);
         return parseEvaluationResult(rawResponse);
-    }
-
-    @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void evaluateAndSave(ResponseSavedEvent event) {
-        Response response = event.response();
-        Interview interview = event.interview();
-        if (response == null) {
-            throw new IllegalArgumentException("response is required");
-        }
-        if (interview == null) {
-            throw new IllegalArgumentException("interview is required");
-        }
-        log.info("Starting evaluation for responseId: {}", response.getId());
-
-        EvaluationResult result = evaluateAnswer(
-                response.getQuestion(),
-                response.getAnswer(),
-                interview.getRole(),
-                interview.getFocusAreas());
-
-        Evaluation evaluation = new Evaluation();
-        evaluation.setResponse(response);
-        evaluation.setScore(result.getScore());
-        evaluation.setStrengths(result.getStrengths());
-        evaluation.setImprovements(result.getImprovements());
-        evaluationRepository.save(evaluation);
-        log.info("Evaluation completed for responseId: {}", response.getId());
     }
 
     private String buildPrompt(String question, String answer, String role, List<String> focusAreas) {

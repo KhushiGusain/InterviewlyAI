@@ -1,6 +1,6 @@
 package com.khushay.Interviewly.service;
 
-import com.khushay.Interviewly.event.ResponseSavedEvent;
+import com.khushay.Interviewly.dto.EvaluationJob;
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.Response;
@@ -12,7 +12,6 @@ import com.khushay.Interviewly.util.ResumeMultipartFileHelper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,7 +40,7 @@ public class InterviewService {
     private final PromptBuilder promptBuilder;
     private final QuestionTypeStrategy questionTypeStrategy;
     private final FallbackQuestionService fallbackQuestionService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final EvaluationQueueProducer evaluationQueueProducer;
     private final Map<UUID, List<InterviewStage>> interviewStagesInMemory = new ConcurrentHashMap<>();
     private static final List<InterviewStage> STAGES = List.of(
             InterviewStage.INTRO,
@@ -176,7 +175,8 @@ public class InterviewService {
         response.setQuestion(previousQuestion);
         response.setAnswer(trimmedAnswer);
         responseRepository.save(response);
-        eventPublisher.publishEvent(new ResponseSavedEvent(response, interview));
+        EvaluationJob evaluationJob = new EvaluationJob(response.getId(), interview.getId());
+        evaluationQueueProducer.publishEvaluationJob(evaluationJob);
 
         int maxBasesInStage = getMaxQuestionsForStage(currentStage);
         int baseQuestionsInStage = interview.getQuestionIndex();
