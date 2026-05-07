@@ -27,7 +27,9 @@ export async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(responseData?.message || `Request failed with status ${response.status}`);
+    const error = new Error(responseData?.message || `Request failed with status ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   return responseData;

@@ -67,6 +67,7 @@ function InterviewPage() {
   const [submitError, setSubmitError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [isBackendSynced, setIsBackendSynced] = useState(false);
+  const [isInterviewValidated, setIsInterviewValidated] = useState(false);
   const prevInterviewIdRef = useRef(null);
   const latestAnswerRef = useRef("");
   const transcriptScrollRef = useRef(null);
@@ -90,6 +91,7 @@ function InterviewPage() {
     setSubmitError("");
     setLoadError("");
     setIsBackendSynced(false);
+    setIsInterviewValidated(false);
   }, [interviewId]);
 
   useEffect(() => {
@@ -150,6 +152,12 @@ function InterviewPage() {
       setIsSessionLoading(true);
       setLoadError("");
       try {
+        await apiRequest(`/interview/${interviewId}/status`, {
+          method: "GET",
+        });
+        if (!isMounted) return;
+        setIsInterviewValidated(true);
+
         const response = await apiRequest(`/interview/${interviewId}/session`, {
           method: "GET",
         });
@@ -165,6 +173,11 @@ function InterviewPage() {
         applySessionState(response, latestAnswerRef.current);
       } catch (err) {
         if (isMounted) {
+          if ([400, 401, 403, 404].includes(err?.status)) {
+            clearPersistedSession(interviewId);
+            navigate("/dashboard", { replace: true });
+            return;
+          }
           setLoadError(err?.message || "Could not load interview session.");
         }
       } finally {
@@ -183,6 +196,16 @@ function InterviewPage() {
       isMounted = false;
     };
   }, [interviewId, navigate]);
+
+  if (!isInterviewValidated && isSessionLoading) {
+    return (
+      <main className="min-h-screen bg-[#02050d] px-6 py-4 text-[#f4f7ff]">
+        <div className="flex min-h-[80vh] items-center justify-center">
+          <span className="h-10 w-10 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.25)] border-t-[#7b5eff]" />
+        </div>
+      </main>
+    );
+  }
 
   async function handleSubmitAnswer() {
     if (!answer.trim() || !interviewId) {

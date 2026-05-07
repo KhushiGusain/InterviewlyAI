@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khushay.Interviewly.dto.InterviewAnswerRequest;
 import com.khushay.Interviewly.dto.InterviewCreatedResponse;
 import com.khushay.Interviewly.dto.InterviewSessionResponse;
+import com.khushay.Interviewly.dto.InterviewStatusResponse;
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewStage;
 import com.khushay.Interviewly.model.User;
@@ -76,6 +77,13 @@ public class InterviewController {
                 session.stage() != null ? session.stage().name() : null,
                 false
         ));
+    }
+
+    @GetMapping("/interview/{id}/status")
+    public ResponseEntity<InterviewStatusResponse> getInterviewStatus(@PathVariable("id") UUID interviewId) {
+        User user = getAuthenticatedUser();
+        InterviewStatusResponse status = interviewService.getInterviewStatus(interviewId, user.getId());
+        return ResponseEntity.ok(status);
     }
 
     @PostMapping("/interview/{id}/answer")

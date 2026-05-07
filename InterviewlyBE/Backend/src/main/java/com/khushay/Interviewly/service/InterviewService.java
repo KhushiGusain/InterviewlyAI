@@ -2,6 +2,7 @@ package com.khushay.Interviewly.service;
 
 import com.khushay.Interviewly.dto.EvaluationJob;
 import com.khushay.Interviewly.dto.FollowUpDecision;
+import com.khushay.Interviewly.dto.InterviewStatusResponse;
 import com.khushay.Interviewly.model.Interview;
 import com.khushay.Interviewly.model.InterviewPlanItem;
 import com.khushay.Interviewly.model.InterviewStage;
@@ -448,5 +449,12 @@ public class InterviewService {
 
     public record AnswerResponse(String question, InterviewStage stage, boolean followUp) {}
     public record StartInterviewResponse(String status, String question, InterviewStage stage) {}
+
+    @Transactional(readOnly = true)
+    public InterviewStatusResponse getInterviewStatus(UUID interviewId, Long userId) {
+        Interview interview = getOwnedInterviewOrThrow(interviewId, userId);
+        String stage = interview.getCurrentStage() != null ? interview.getCurrentStage().name() : null;
+        return new InterviewStatusResponse(interview.getStatus(), interview.getLastQuestionText(), stage);
+    }
 
 }

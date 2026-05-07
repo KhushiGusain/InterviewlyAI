@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
 
 function StageBar({ label, score, colorClass }) {
@@ -79,6 +79,8 @@ function ReportsPage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isReportValidated, setIsReportValidated] = useState(false);
+  const [shouldRedirectToDashboard, setShouldRedirectToDashboard] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const displayName = localStorage.getItem("userName") || "User";
@@ -91,11 +93,21 @@ function ReportsPage() {
       if (!id) return;
       setLoading(true);
       setError("");
+      setShouldRedirectToDashboard(false);
       try {
+        await apiRequest(`/interview/${id}/status`, { method: "GET" });
+        if (!isMounted) return;
+        setIsReportValidated(true);
+
         const response = await apiRequest(`/interview/${id}/report`, { method: "GET" });
         if (isMounted) setReport(response);
       } catch (fetchError) {
-        if (isMounted) setError(fetchError.message || "Failed to fetch report.");
+        if (!isMounted) return;
+        if ([400, 401, 403, 404].includes(fetchError?.status)) {
+          setShouldRedirectToDashboard(true);
+          return;
+        }
+        setError(fetchError.message || "Failed to fetch report.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -106,6 +118,10 @@ function ReportsPage() {
       isMounted = false;
     };
   }, [id]);
+
+  if (shouldRedirectToDashboard) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -122,6 +138,16 @@ function ReportsPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isProfileMenuOpen]);
+
+  if (!isReportValidated && loading) {
+    return (
+      <main className="min-h-screen bg-[#02050d] px-6 py-4 text-[#f4f7ff]">
+        <div className="flex min-h-[80vh] items-center justify-center">
+          <span className="h-10 w-10 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.25)] border-t-[#7b5eff]" />
+        </div>
+      </main>
+    );
+  }
 
   const reportData = report || summary;
   const overallScore = Number(reportData.overallScore ?? reportData.score ?? 0);

@@ -15,4 +15,6 @@ public interface InterviewRepository extends JpaRepository<Interview, UUID> {
     List<Interview> findByUserId(Long userId);
 
     Optional<Interview> findByIdAndUserId(UUID interviewId, Long userId);
+
+    boolean existsByIdAndUserId(UUID interviewId, Long userId);
 }
