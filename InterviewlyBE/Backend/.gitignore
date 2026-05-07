@@ -17,7 +17,6 @@ target/
 .env
 
 # --- Spring Boot sensitive configs ---
-application.properties
 application-local.properties
 application-dev.properties
 
