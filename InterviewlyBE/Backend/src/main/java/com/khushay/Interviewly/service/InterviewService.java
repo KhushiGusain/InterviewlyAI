@@ -214,7 +214,7 @@ public class InterviewService {
                     interviewStagesInMemory.remove(interviewId);
                     interviewPlansInMemory.remove(interviewId);
                     interviewRepository.save(interview);
-                    return new AnswerResponse("END", InterviewStage.END);
+                    return new AnswerResponse("END", InterviewStage.END, false);
                 }
                 interview.setCurrentStage(nextStage);
                 interview.setFollowUpsUsedInStage(0);
@@ -225,7 +225,7 @@ public class InterviewService {
                 interview.setQuestionIndex(1);
 
                 interviewRepository.save(interview);
-                return new AnswerResponse(firstOfNextStage, nextStage);
+                return new AnswerResponse(firstOfNextStage, nextStage, false);
             }
             interview.setCurrentStage(InterviewStage.END);
             interview.setStatus(Interview.STATUS_COMPLETED);
@@ -237,7 +237,7 @@ public class InterviewService {
             interviewStagesInMemory.remove(interviewId);
             interviewPlansInMemory.remove(interviewId);
             interviewRepository.save(interview);
-            return new AnswerResponse("END", InterviewStage.END);
+            return new AnswerResponse("END", InterviewStage.END, false);
         }
 
         FollowUpType followUpTypeForNextQuestion = nextIsFollowUp
@@ -263,7 +263,7 @@ public class InterviewService {
         }
 
         interviewRepository.save(interview);
-        return new AnswerResponse(nextQuestion, interview.getCurrentStage());
+        return new AnswerResponse(nextQuestion, interview.getCurrentStage(), nextIsFollowUp);
     }
 
     private Interview getOwnedInterviewOrThrow(UUID interviewId, Long userId) {
@@ -446,7 +446,7 @@ public class InterviewService {
         });
     }
 
-    public record AnswerResponse(String question, InterviewStage stage) {}
+    public record AnswerResponse(String question, InterviewStage stage, boolean followUp) {}
     public record StartInterviewResponse(String status, String question, InterviewStage stage) {}
 
 }

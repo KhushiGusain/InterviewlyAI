@@ -13,4 +13,5 @@ public class InterviewSessionResponse {
     private String status;
     private String question;
     private String stage;
+    private boolean followUp;
 }

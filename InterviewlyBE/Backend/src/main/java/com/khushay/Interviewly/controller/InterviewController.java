@@ -73,7 +73,8 @@ public class InterviewController {
         return ResponseEntity.ok(new InterviewSessionResponse(
                 session.status(),
                 session.question(),
-                session.stage() != null ? session.stage().name() : null
+                session.stage() != null ? session.stage().name() : null,
+                false
         ));
     }
 
@@ -88,13 +89,15 @@ public class InterviewController {
             return ResponseEntity.ok(new InterviewSessionResponse(
                     Interview.STATUS_COMPLETED,
                     null,
-                    InterviewStage.END.name()
+                    InterviewStage.END.name(),
+                    false
             ));
         }
         return ResponseEntity.ok(new InterviewSessionResponse(
                 Interview.STATUS_IN_PROGRESS,
                 next.question(),
-                next.stage().name()
+                next.stage().name(),
+                next.followUp()
         ));
     }
 

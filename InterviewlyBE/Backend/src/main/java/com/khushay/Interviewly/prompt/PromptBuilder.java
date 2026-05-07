@@ -112,8 +112,28 @@ public class PromptBuilder {
         sb.append("CURRENT QUESTION CATEGORY\n");
         sb.append("=====================================\n\n");
         sb.append("- Category: ").append(currentCategory.name()).append('\n');
-        sb.append("- Do NOT change category.\n");
+        sb.append("- Generate exactly one question for this category.\n");
         sb.append("- ").append(categoryInstruction(currentCategory)).append("\n\n");
+
+        sb.append("=====================================\n");
+        sb.append("REALISM\n");
+        sb.append("=====================================\n\n");
+        sb.append("- Questions should resemble actual interview questions asked in real companies.\n");
+        sb.append("- Prefer practical and commonly tested concepts.\n");
+        sb.append("- Avoid overly academic or artificial questions.\n");
+        sb.append("- Keep questions concise and conversational.\n");
+        sb.append("- Questions should feel interviewer-led, not AI-generated.\n");
+        sb.append("- Avoid repetitive structures.\n");
+        sb.append("- Avoid sounding like a questionnaire.\n\n");
+
+        sb.append("=====================================\n");
+        sb.append("CONVERSATIONAL VARIATION\n");
+        sb.append("=====================================\n\n");
+        sb.append("- Vary sentence openings naturally across questions.\n");
+        sb.append("- Avoid repeating the same interviewer phrasing.\n");
+        sb.append("- Occasionally use conversational transitions naturally.\n");
+        sb.append("- Maintain a professional interviewer tone.\n");
+        sb.append("- Keep wording concise and realistic.\n\n");
 
         sb.append("=====================================\n");
         sb.append("FOLLOW-UP LOGIC\n");
@@ -124,11 +144,10 @@ public class PromptBuilder {
             sb.append("- This turn is a follow-up.\n");
             sb.append("- Follow-up intent: ").append(currentFollowUpType.name()).append('\n');
             sb.append("- ").append(followUpIntentInstruction(currentFollowUpType)).append('\n');
-            sb.append("- Sound conversational and interviewer-like, not robotic.\n");
-            sb.append("- Do NOT use generic probes like \"Can you explain more?\".\n");
-            sb.append("- Reference specific claims, reasoning, implementation choices, or trade-offs from the answer.\n");
-            sb.append("- Keep the follow-up concise and natural.\n");
-            sb.append("- This is the only follow-up for this topic; after this, move to the next planned topic.\n");
+            sb.append("- Make it a natural interviewer continuation of the candidate's answer.\n");
+            sb.append("- Reference the candidate's specific claim/reasoning and probe deeper.\n");
+            sb.append("- Clarify vague logic and challenge trade-offs when relevant.\n");
+            sb.append("- Avoid generic probing, robotic wording, and repeated \"explain more\" phrasing.\n");
             sb.append("- Previous answer:\n  ").append(previousAnswer.trim()).append("\n\n");
         } else {
             sb.append("- This turn is a new base question.\n");
@@ -176,26 +195,26 @@ public class PromptBuilder {
 
     private static String categoryInstruction(QuestionCategory category) {
         return switch (category) {
-            case INTRODUCTION -> "Ask a warm, brief introduction question.";
-            case RESUME_EXPERIENCE -> "Ask about past experience from resume in a concrete way.";
-            case ROLE_FUNDAMENTAL -> "Ask a core fundamentals question for the target role.";
-            case ROLE_SCENARIO -> "Ask a practical role-based scenario question.";
-            case DSA_CONCEPT -> "Ask a DSA concept question (complexity, data structures, trade-offs).";
-            case DSA_PROBLEM -> "Ask a realistic coding/problem-solving interview question.";
-            case OOP_CONCEPT -> "Ask an OOP principle question (encapsulation, abstraction, SOLID, etc.).";
-            case OOP_DESIGN -> "Ask an object-oriented design question with trade-offs.";
-            case BACKEND_FUNDAMENTAL -> "Ask backend fundamentals (APIs, architecture, reliability, security).";
-            case BACKEND_SCENARIO -> "Ask a backend production scenario with constraints.";
-            case FRONTEND_FUNDAMENTAL -> "Ask frontend fundamentals (state, rendering, performance, UX basics).";
-            case FRONTEND_SCENARIO -> "Ask a frontend scenario question with real product constraints.";
-            case DATABASE_CONCEPT -> "Ask a database concept question (indexing, transactions, schema, joins).";
-            case DATABASE_SCENARIO -> "Ask a practical SQL/database troubleshooting or design scenario.";
-            case PROJECT_DEEP_DIVE -> "Ask one focused deep-dive question on architecture/decisions/impact.";
-            case TEAMWORK -> "Ask a behavioral teamwork question with a real example.";
+            case INTRODUCTION -> "Greet the candidate naturally using their name, ask an introduction-style opening question, vary phrasing (e.g., tell me about yourself / walk me through your background / what has your journey been like), keep a warm professional tone, and do not ask technical content.";
+            case RESUME_EXPERIENCE -> "Ask about previous experience or a project from the resume.";
+            case ROLE_FUNDAMENTAL -> "Ask one core fundamentals question relevant to the target role.";
+            case ROLE_SCENARIO -> "Ask one practical role-based scenario and how they would handle it.";
+            case DSA_CONCEPT -> "Ask a DSA concept question focused on reasoning and complexity awareness.";
+            case DSA_PROBLEM -> "Ask a realistic DSA/coding problem that tests reasoning and complexity understanding.";
+            case OOP_CONCEPT -> "Ask about one OOP principle and practical application.";
+            case OOP_DESIGN -> "Ask a practical object-oriented design question.";
+            case BACKEND_FUNDAMENTAL -> "Ask one backend fundamentals question (API, data flow, reliability, or security).";
+            case BACKEND_SCENARIO -> "Ask a practical backend/API/system behavior scenario.";
+            case FRONTEND_FUNDAMENTAL -> "Ask one frontend fundamentals question (state, rendering, performance, or UX).";
+            case FRONTEND_SCENARIO -> "Ask a practical frontend product scenario with constraints.";
+            case DATABASE_CONCEPT -> "Ask one database concept question (schema, indexing, transactions, or joins).";
+            case DATABASE_SCENARIO -> "Ask a practical database/SQL scenario about debugging, scaling, or trade-offs.";
+            case PROJECT_DEEP_DIVE -> "Ask a focused deep-dive on project decisions, implementation, or impact.";
+            case TEAMWORK -> "Ask a collaboration/teamwork experience question.";
             case CONFLICT -> "Ask a behavioral conflict-resolution question.";
             case OWNERSHIP -> "Ask about accountability and ownership in a real situation.";
             case STRENGTH_WEAKNESS -> "Ask a candid strengths/weaknesses reflection question.";
-            case FAILURE -> "Ask about a failure, learning, and corrective actions.";
+            case FAILURE -> "Ask about a failure, mistake, or learning experience.";
             case LEADERSHIP -> "Ask a leadership/influence question with outcomes.";
             case END -> "Ask a brief and polite closing question/remark.";
         };
@@ -203,9 +222,9 @@ public class PromptBuilder {
 
     private static String followUpIntentInstruction(FollowUpType type) {
         return switch (type) {
-            case CLARIFICATION -> "Ask a precise clarification about the incomplete or vague part of the answer.";
-            case DEEP_DIVE -> "Probe deeper technical understanding through concrete implementation or reasoning details.";
-            case CHALLENGE -> "Challenge the claim using trade-offs, edge cases, alternatives, or constraints.";
+            case CLARIFICATION -> "Style: ask a precise clarification for incomplete or vague reasoning.";
+            case DEEP_DIVE -> "Style: probe deeper technical understanding and implementation details.";
+            case CHALLENGE -> "Style: challenge claims via trade-offs, edge cases, constraints, or alternatives.";
             case NONE -> "No follow-up intent; move to the next topic.";
         };
     }
