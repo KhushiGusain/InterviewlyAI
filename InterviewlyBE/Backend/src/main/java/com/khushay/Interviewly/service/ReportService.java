@@ -29,8 +29,8 @@ public class ReportService {
     private final EvaluationRepository evaluationRepository;
 
     @Transactional(readOnly = true)
-    public ReportResponse generateReport(UUID interviewId) {
-        Interview interview = interviewRepository.findById(interviewId)
+    public ReportResponse generateReport(UUID interviewId, Long userId) {
+        Interview interview = interviewRepository.findByIdAndUserId(interviewId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
 
         List<Response> responses = responseRepository.findByInterviewIdOrderByCreatedAtAsc(interview.getId());

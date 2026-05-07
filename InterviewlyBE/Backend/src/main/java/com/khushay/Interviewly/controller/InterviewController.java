@@ -68,7 +68,8 @@ public class InterviewController {
 
     @GetMapping("/interview/{id}/session")
     public ResponseEntity<InterviewSessionResponse> getInterviewSession(@PathVariable("id") UUID interviewId) {
-        InterviewService.StartInterviewResponse session = interviewService.getOrCreateInterviewSession(interviewId);
+        User user = getAuthenticatedUser();
+        InterviewService.StartInterviewResponse session = interviewService.getOrCreateInterviewSession(interviewId, user.getId());
         return ResponseEntity.ok(new InterviewSessionResponse(
                 session.status(),
                 session.question(),
@@ -81,7 +82,8 @@ public class InterviewController {
             @PathVariable("id") UUID interviewId,
             @RequestBody InterviewAnswerRequest request
     ) {
-        InterviewService.AnswerResponse next = interviewService.submitAnswer(interviewId, request.getAnswer());
+        User user = getAuthenticatedUser();
+        InterviewService.AnswerResponse next = interviewService.submitAnswer(interviewId, user.getId(), request.getAnswer());
         if (InterviewStage.END.equals(next.stage())) {
             return ResponseEntity.ok(new InterviewSessionResponse(
                     Interview.STATUS_COMPLETED,
@@ -94,6 +96,13 @@ public class InterviewController {
                 next.question(),
                 next.stage().name()
         ));
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
     private List<String> parseFocusAreas(String focusAreasJson) {

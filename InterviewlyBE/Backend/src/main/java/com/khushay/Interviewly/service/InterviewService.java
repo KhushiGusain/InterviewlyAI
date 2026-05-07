@@ -99,9 +99,8 @@ public class InterviewService {
     }
 
     @Transactional
-    public StartInterviewResponse getOrCreateInterviewSession(UUID interviewId) {
-        Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
+    public StartInterviewResponse getOrCreateInterviewSession(UUID interviewId, Long userId) {
+        Interview interview = getOwnedInterviewOrThrow(interviewId, userId);
 
         if (Interview.STATUS_COMPLETED.equals(interview.getStatus())) {
             return new StartInterviewResponse(Interview.STATUS_COMPLETED, null, null);
@@ -144,9 +143,8 @@ public class InterviewService {
     }
 
     @Transactional
-    public AnswerResponse submitAnswer(UUID interviewId, String answer) {
-        Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
+    public AnswerResponse submitAnswer(UUID interviewId, Long userId, String answer) {
+        Interview interview = getOwnedInterviewOrThrow(interviewId, userId);
         List<InterviewStage> stages = interviewStagesInMemory.computeIfAbsent(
                 interviewId,
                 id -> STAGES
@@ -243,6 +241,11 @@ public class InterviewService {
 
         interviewRepository.save(interview);
         return new AnswerResponse(nextQuestion, interview.getCurrentStage());
+    }
+
+    private Interview getOwnedInterviewOrThrow(UUID interviewId, Long userId) {
+        return interviewRepository.findByIdAndUserId(interviewId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Interview not found"));
     }
 
     private String generateAiQuestion(
