@@ -13,6 +13,13 @@ const FOCUS_AREAS = [
   "Backend",
   "Testing",
 ];
+const DASHBOARD_FORM_STORAGE_KEY = "interviewly_dashboard_form";
+const initialFormState = {
+  role: "",
+  company: "",
+  jobDescription: "",
+  focusAreas: [],
+};
 
 function CalendarIcon() {
   return (
@@ -134,22 +141,47 @@ function StatusBadge({ status }) {
   );
 }
 
+function readDraftFromStorage() {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_FORM_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function DashboardPage() {
   const navigate = useNavigate();
   const resumeInputRef = useRef(null);
   const profileMenuRef = useRef(null);
-  const [formData, setFormData] = useState({
-    role: "",
-    company: "",
-    jobDescription: "",
-    focusAreas: [],
+  const [formData, setFormData] = useState(() => {
+    const draft = readDraftFromStorage();
+    const saved = draft?.formData;
+    if (!saved || typeof saved !== "object") return initialFormState;
+    return {
+      role: typeof saved.role === "string" ? saved.role : "",
+      company: typeof saved.company === "string" ? saved.company : "",
+      jobDescription: typeof saved.jobDescription === "string" ? saved.jobDescription : "",
+      focusAreas: Array.isArray(saved.focusAreas)
+        ? saved.focusAreas.filter((a) => typeof a === "string")
+        : [],
+    };
   });
-  const [customTopics, setCustomTopics] = useState([]);
+  const [customTopics, setCustomTopics] = useState(() => {
+    const draft = readDraftFromStorage();
+    return Array.isArray(draft?.customTopics)
+      ? draft.customTopics.filter((t) => typeof t === "string")
+      : [];
+  });
   const [isCustomTopicModalOpen, setIsCustomTopicModalOpen] = useState(false);
   const [customTopicInput, setCustomTopicInput] = useState("");
   const [customTopicError, setCustomTopicError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [roleError, setRoleError] = useState("");
   const [resumeFileName, setResumeFileName] = useState("");
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeError, setResumeError] = useState("");
@@ -178,6 +210,17 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(
+        DASHBOARD_FORM_STORAGE_KEY,
+        JSON.stringify({ formData, customTopics })
+      );
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [formData, customTopics]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function fetchDashboardData() {
@@ -204,11 +247,13 @@ function DashboardPage() {
 
   function handleChange(eventOrName, value) {
     if (typeof eventOrName === "string") {
+      if (eventOrName === "role") setRoleError("");
       setFormData((prev) => ({ ...prev, [eventOrName]: value }));
       return;
     }
 
     const { name, value: inputValue } = eventOrName.target;
+    if (name === "role") setRoleError("");
     setFormData((prev) => ({ ...prev, [name]: inputValue }));
   }
 
@@ -312,9 +357,10 @@ function DashboardPage() {
 
   async function handleSubmit() {
     setSubmitError("");
+    setRoleError("");
 
     if (!formData.role.trim()) {
-      setSubmitError("Role is required.");
+      setRoleError("Role is required.");
       return;
     }
 
@@ -340,6 +386,12 @@ function DashboardPage() {
         throw new Error("Interview created, but no interview id was returned.");
       }
 
+      setFormData(initialFormState);
+      setCustomTopics([]);
+      setResumeFileName("");
+      setResumeFile(null);
+      setResumeError("");
+      localStorage.removeItem(DASHBOARD_FORM_STORAGE_KEY);
       navigate(`/interview/${interviewId}`);
     } catch (error) {
       setSubmitError(error.message || "Failed to start interview.");
@@ -431,9 +483,14 @@ function DashboardPage() {
                       placeholder="e.g. Software Engineer"
                       value={formData.role}
                       onChange={handleChange}
-                      className="h-10 w-full rounded-xl border border-[rgba(145,172,255,0.2)] bg-[rgba(7,13,30,0.7)] pl-8.5 pr-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+                      className={`h-10 w-full rounded-xl bg-[rgba(7,13,30,0.7)] pl-8.5 pr-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] ${
+                        roleError
+                          ? "border border-[rgba(255,116,142,0.7)] focus:border-[#ff7491] focus:shadow-[0_0_0_2px_rgba(255,116,142,0.2)]"
+                          : "border border-[rgba(145,172,255,0.2)] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+                      }`}
                     />
                   </span>
+                  {roleError ? <p className="text-[11px] font-medium text-[#ff9ca6]">{roleError}</p> : null}
                 </label>
 
                 <label className="grid gap-1 text-xs font-semibold text-[#d7e5ff]">
@@ -544,7 +601,7 @@ function DashboardPage() {
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] text-sm font-semibold tracking-wide text-white shadow-[0_4px_20px_rgba(78,141,255,0.35)] transition hover:brightness-110 hover:shadow-[0_4px_28px_rgba(78,141,255,0.5)] disabled:cursor-not-allowed disabled:opacity-80"
+              className="mt-4 flex h-11 cursor-pointer w-full items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] text-sm font-semibold tracking-wide text-white shadow-[0_4px_20px_rgba(78,141,255,0.35)] transition hover:brightness-110 hover:shadow-[0_4px_28px_rgba(78,141,255,0.5)] disabled:cursor-not-allowed disabled:opacity-80"
             >
               {isSubmitting ? (
                 <>
@@ -676,14 +733,14 @@ function DashboardPage() {
               <button
                 type="button"
                 onClick={closeCustomTopicModal}
-                className="h-9 rounded-lg border border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.45)] px-3 text-xs font-medium text-[#c8d8f8] transition hover:border-[rgba(145,172,255,0.45)]"
+                className="h-9 rounded-lg border cursor-pointer border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.45)] px-3 text-xs font-medium text-[#c8d8f8] transition hover:border-[rgba(145,172,255,0.45)]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddCustomTopic}
-                className="h-9 rounded-lg bg-linear-to-r from-[#2f80ff] to-[#5b33ff] px-3 text-xs font-semibold text-white transition hover:brightness-110"
+                className="h-9 rounded-lg bg-linear-to-r cursor-pointer from-[#2f80ff] to-[#5b33ff] px-3 text-xs font-semibold text-white transition hover:brightness-110"
               >
                 Add Topic
               </button>

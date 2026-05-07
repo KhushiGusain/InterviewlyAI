@@ -168,7 +168,7 @@ function InterviewsPage() {
                 key={item.id}
                 type="button"
                 onClick={() => navigate(getInterviewNavigationPath(item))}
-                className="flex w-full items-center gap-3 rounded-xl border border-[rgba(145,172,255,0.1)] bg-[rgba(7,13,30,0.45)] px-4 py-3 text-left transition hover:border-[rgba(145,172,255,0.25)] hover:bg-[rgba(7,13,30,0.65)]"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-[rgba(145,172,255,0.1)] bg-[rgba(7,13,30,0.45)] px-4 py-3 text-left transition hover:border-[rgba(145,172,255,0.25)] hover:bg-[rgba(7,13,30,0.65)]"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(78,141,255,0.2)] text-sm font-bold text-[#9ec3ff]">
                   {String(item.role || "?").charAt(0).toUpperCase()}
