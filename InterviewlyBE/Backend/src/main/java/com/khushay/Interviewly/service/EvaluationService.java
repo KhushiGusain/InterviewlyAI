@@ -2,10 +2,19 @@ package com.khushay.Interviewly.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.khushay.Interviewly.dto.EvaluationJob;
 import com.khushay.Interviewly.dto.EvaluationResult;
+import com.khushay.Interviewly.model.Evaluation;
+import com.khushay.Interviewly.model.Interview;
+import com.khushay.Interviewly.model.Response;
+import com.khushay.Interviewly.repository.EvaluationRepository;
+import com.khushay.Interviewly.repository.ResponseRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -22,8 +31,11 @@ public class EvaluationService {
                     0,
                     "No meaningful content",
                     "Answer is invalid or unclear. Please provide a structured and relevant answer.");
+    private static final Logger log = LoggerFactory.getLogger(EvaluationService.class);
     private final OpenAIService openAIService;
     private final ObjectMapper objectMapper;
+    private final ResponseRepository responseRepository;
+    private final EvaluationRepository evaluationRepository;
 
     public EvaluationResult evaluateAnswer(
             String question,
@@ -44,6 +56,73 @@ public class EvaluationService {
         String prompt = buildPrompt(question, answer, role, focusAreas);
         String rawResponse = openAIService.generateTextResponse(prompt);
         return parseEvaluationResult(rawResponse);
+    }
+
+    @Transactional
+    public boolean processEvaluation(EvaluationJob job) {
+        if (job == null || job.getResponseId() == null) {
+            log.warn("Skipping evaluation: invalid job payload");
+            return false;
+        }
+
+        Response response = fetchResponse(job);
+        if (response == null) {
+            return false;
+        }
+
+        Interview interview = validateInterview(job, response);
+        if (interview == null) {
+            return false;
+        }
+
+        EvaluationResult result = evaluateWithOpenAi(response, interview);
+        saveEvaluation(response, result);
+        updateReportDataIfNeeded(interview.getId());
+        return true;
+    }
+
+    private Response fetchResponse(EvaluationJob job) {
+        Response response = responseRepository.findById(job.getResponseId()).orElse(null);
+        if (response == null) {
+            log.warn("Skipping evaluation: response not found for responseId={}", job.getResponseId());
+        }
+        return response;
+    }
+
+    private Interview validateInterview(EvaluationJob job, Response response) {
+        Interview interview = response.getInterview();
+        if (interview == null) {
+            log.warn("Skipping evaluation: interview missing for responseId={}", job.getResponseId());
+            return null;
+        }
+        if (job.getInterviewId() != null && !job.getInterviewId().equals(interview.getId())) {
+            log.warn("Skipping evaluation: interview mismatch for responseId={}", job.getResponseId());
+            return null;
+        }
+        return interview;
+    }
+
+    private EvaluationResult evaluateWithOpenAi(Response response, Interview interview) {
+        return evaluateAnswer(
+                response.getQuestion(),
+                response.getAnswer(),
+                interview.getRole(),
+                interview.getFocusAreas());
+    }
+
+    private void saveEvaluation(Response response, EvaluationResult result) {
+        Evaluation evaluation = new Evaluation();
+        evaluation.setResponse(response);
+        evaluation.setScore(result.getScore());
+        evaluation.setStrengths(result.getStrengths());
+        evaluation.setImprovements(result.getImprovements());
+        evaluationRepository.save(evaluation);
+    }
+
+    private void updateReportDataIfNeeded(java.util.UUID interviewId) {
+        // Reports are currently generated dynamically from stored responses/evaluations.
+        // This hook is kept for future cached/materialized report updates.
+        log.debug("Report data update hook invoked for interviewId={}", interviewId);
     }
 
     private String buildPrompt(String question, String answer, String role, List<String> focusAreas) {

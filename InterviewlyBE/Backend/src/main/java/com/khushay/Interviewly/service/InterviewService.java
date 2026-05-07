@@ -16,6 +16,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -176,7 +178,7 @@ public class InterviewService {
         response.setAnswer(trimmedAnswer);
         responseRepository.save(response);
         EvaluationJob evaluationJob = new EvaluationJob(response.getId(), interview.getId());
-        evaluationQueueProducer.publishEvaluationJob(evaluationJob);
+        publishEvaluationJobAfterCommit(evaluationJob);
 
         int maxBasesInStage = getMaxQuestionsForStage(currentStage);
         int baseQuestionsInStage = interview.getQuestionIndex();
@@ -392,6 +394,20 @@ public class InterviewService {
             case BEHAVIORAL -> 3;
             default -> 0;
         };
+    }
+
+    private void publishEvaluationJobAfterCommit(EvaluationJob job) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            evaluationQueueProducer.publishEvaluationJob(job);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                evaluationQueueProducer.publishEvaluationJob(job);
+            }
+        });
     }
 
     public record AnswerResponse(String question, InterviewStage stage) {}
