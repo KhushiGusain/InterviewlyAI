@@ -1,0 +1,9 @@
+.git
+.gitignore
+target
+node_modules
+uploads
+.idea
+*.iml
+.env
+README.md
