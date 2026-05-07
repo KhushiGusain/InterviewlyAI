@@ -42,6 +42,12 @@ function LoginPage() {
     }
   }
 
+  function handleUseDemoAccount() {
+    setEmail("gusainkhushii@gmail.com");
+    setPassword("20khus**");
+    setError("");
+  }
+
   return (
     <main className="relative h-screen overflow-hidden bg-[radial-gradient(circle_at_20%_10%,#0f245f_0%,#050918_45%,#03050f_100%)] py-4 text-[#f4f7ff] sm:py-5">
       <div className="absolute right-[8%] top-[9%] h-[260px] w-[260px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#4db3ff_0%,#275cff_65%,transparent_100%)] opacity-95 blur-[2px]" />
@@ -131,6 +137,14 @@ function LoginPage() {
                 ) : (
                   "LOGIN"
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleUseDemoAccount}
+                className="flex h-[46px] w-full cursor-pointer items-center justify-center rounded-xl border border-[rgba(145,172,255,0.3)] bg-[rgba(9,18,41,0.55)] font-semibold tracking-[0.02em] text-[#dfe8ff] transition hover:border-[#568cff] hover:bg-[rgba(86,140,255,0.14)] focus:outline-none focus:shadow-[0_0_0_3px_rgba(86,140,255,0.2)]"
+              >
+                Use Demo Account
               </button>
             </form>
 
