@@ -27,12 +27,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private static final String DEFAULT_ALLOWED_ORIGINS =
-            "http://localhost:5173,https://your-frontend-domain.vercel.app";
+    /**
+     * Comma-separated origins or patterns. Patterns may use * (e.g. https://*.vercel.app).
+     * Override on Render with CORS_ALLOWED_ORIGINS if you want an explicit list only.
+     */
+    private static final String DEFAULT_CORS_ORIGIN_PATTERNS =
+            "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,https://*.vercel.app";
 
     @Qualifier("jwtAuthenticationFilter")
     private final OncePerRequestFilter jwtAuthenticationFilter;
-    @Value("${CORS_ALLOWED_ORIGINS:" + DEFAULT_ALLOWED_ORIGINS + "}")
+    @Value("${CORS_ALLOWED_ORIGINS:" + DEFAULT_CORS_ORIGIN_PATTERNS + "}")
     private String corsAllowedOrigins;
 
     @Bean
@@ -59,11 +63,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> allowedOrigins = Arrays.stream(corsAllowedOrigins.split(","))
+        List<String> patterns = Arrays.stream(corsAllowedOrigins.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())
                 .collect(Collectors.toList());
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOriginPatterns(patterns);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
