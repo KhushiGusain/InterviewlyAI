@@ -7,6 +7,7 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,7 @@ public class EvaluationQueueConsumer {
     private final RedisTemplate<String, Object> redisTemplate;
     private final EvaluationService evaluationService;
 
-    private volatile boolean running;
+    private volatile boolean running = true;
     private Thread workerThread;
 
     @PostConstruct
@@ -40,7 +41,7 @@ public class EvaluationQueueConsumer {
     }
 
     private void consumeLoop() {
-        while (running) {
+        while (running && !Thread.currentThread().isInterrupted()) {
             try {
                 Object payload = redisTemplate.opsForList().leftPop(RedisQueues.EVALUATION_QUEUE);
                 if (!(payload instanceof EvaluationJob job)) {
@@ -69,8 +70,23 @@ public class EvaluationQueueConsumer {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception ex) {
+                if (isExpectedShutdownException(ex)) {
+                    log.debug("Evaluation queue consumer stopping during shutdown: {}", ex.getMessage());
+                    break;
+                }
                 log.error("Evaluation queue consumer error", ex);
             }
         }
+    }
+
+    private boolean isExpectedShutdownException(Exception ex) {
+        if (!running) {
+            return true;
+        }
+        if (ex instanceof RedisConnectionFailureException) {
+            return true;
+        }
+        String message = ex.getMessage();
+        return message != null && message.contains("LettuceConnectionFactory has been STOPPED");
     }
 }
