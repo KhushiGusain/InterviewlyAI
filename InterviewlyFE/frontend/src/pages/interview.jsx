@@ -144,6 +144,13 @@ function InterviewPage() {
   }, [question]);
 
   useEffect(() => {
+    return () => {
+      // Ensure TTS does not continue after leaving interview route.
+      stopSpeaking();
+    };
+  }, []);
+
+  useEffect(() => {
     if (transcript?.trim()) {
       setAnswer(transcript);
     }
@@ -175,6 +182,7 @@ function InterviewPage() {
         const status = response?.status;
 
         if (status === "COMPLETED") {
+          stopSpeaking();
           clearPersistedSession(interviewId);
           navigate(`/reports/${interviewId}`, { replace: true });
           return;
@@ -233,6 +241,7 @@ function InterviewPage() {
 
       if (response?.status === "COMPLETED") {
         stopListening();
+        stopSpeaking();
         setAnswer("");
         resetTranscript();
         clearPersistedSession(interviewId);
@@ -267,7 +276,11 @@ function InterviewPage() {
             </div>
             <button
               type="button"
-              onClick={() => navigate("/interviews")}
+              onClick={() => {
+                stopSpeaking();
+                stopListening();
+                navigate("/interviews");
+              }}
               className="rounded-lg border cursor-pointer border-[rgba(255,109,136,0.35)] bg-[rgba(83,30,47,0.45)] px-4 py-2 text-sm font-medium text-[#ffafbc] transition hover:bg-[rgba(121,42,67,0.5)]"
             >
               Leave Interview
