@@ -50,6 +50,15 @@ function clearPersistedSession(interviewId) {
   }
 }
 
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8" stroke="currentColor" strokeWidth={2}>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" />
+    </svg>
+  );
+}
+
 function InterviewPage() {
   const { id: interviewId } = useParams();
   const navigate = useNavigate();
@@ -330,7 +339,7 @@ function InterviewPage() {
               {micState === "processing" ? (
                 <span className="h-6 w-6 animate-spin rounded-full border-2 border-[rgba(255,237,196,0.35)] border-t-[#ffedc4]" />
               ) : (
-                <img src="/src/assets/mic-loop.svg" alt="Microphone" className="h-14 w-14" />
+                <MicIcon />
               )}
             </button>
             <p className="mt-4 text-lg font-medium text-[#e7edff]">

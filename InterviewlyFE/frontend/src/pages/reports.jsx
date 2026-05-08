@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../services/api";
 
 function StageBar({ label, score, colorClass }) {
@@ -79,8 +79,6 @@ function ReportsPage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isReportValidated, setIsReportValidated] = useState(false);
-  const [shouldRedirectToDashboard, setShouldRedirectToDashboard] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const displayName = localStorage.getItem("userName") || "User";
@@ -93,20 +91,11 @@ function ReportsPage() {
       if (!id) return;
       setLoading(true);
       setError("");
-      setShouldRedirectToDashboard(false);
       try {
-        await apiRequest(`/interview/${id}/status`, { method: "GET" });
-        if (!isMounted) return;
-        setIsReportValidated(true);
-
         const response = await apiRequest(`/interview/${id}/report`, { method: "GET" });
         if (isMounted) setReport(response);
       } catch (fetchError) {
         if (!isMounted) return;
-        if ([400, 401, 403, 404].includes(fetchError?.status)) {
-          setShouldRedirectToDashboard(true);
-          return;
-        }
         setError(fetchError.message || "Failed to fetch report.");
       } finally {
         if (isMounted) setLoading(false);
@@ -118,10 +107,6 @@ function ReportsPage() {
       isMounted = false;
     };
   }, [id]);
-
-  if (shouldRedirectToDashboard) {
-    return <Navigate to="/dashboard" replace />;
-  }
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -139,7 +124,7 @@ function ReportsPage() {
     };
   }, [isProfileMenuOpen]);
 
-  if (!isReportValidated && loading) {
+  if (loading) {
     return (
       <main className="min-h-screen bg-[#02050d] px-6 py-4 text-[#f4f7ff]">
         <div className="flex min-h-[80vh] items-center justify-center">
@@ -153,14 +138,12 @@ function ReportsPage() {
   const overallScore = Number(reportData.overallScore ?? reportData.score ?? 0);
   const completedAt = reportData.completedAt || reportData.createdAt;
 
-  const stageScores = useMemo(() => {
-    const source = reportData.stageBreakdown || reportData.stageScores || reportData.performanceByStage || {};
-    return {
-      intro: Number(source.intro ?? source.INTRO ?? 7.5),
-      technical: Number(source.technical ?? source.TECHNICAL ?? 6.0),
-      behavioral: Number(source.behavioral ?? source.BEHAVIORAL ?? 8.0),
-    };
-  }, [reportData]);
+  const stageSource = reportData.stageBreakdown || reportData.stageScores || reportData.performanceByStage || {};
+  const stageScores = {
+    intro: Number(stageSource.intro ?? stageSource.INTRO ?? 7.5),
+    technical: Number(stageSource.technical ?? stageSource.TECHNICAL ?? 6.0),
+    behavioral: Number(stageSource.behavioral ?? stageSource.BEHAVIORAL ?? 8.0),
+  };
 
   const detailedFeedback = reportData.questions || reportData.detailedFeedback || reportData.feedback || [];
 
