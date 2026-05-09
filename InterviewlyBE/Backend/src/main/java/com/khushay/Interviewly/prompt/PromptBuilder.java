@@ -79,6 +79,10 @@ public class PromptBuilder {
         String resumeLine = StringUtils.hasText(resumeSummary) ? resumeSummary.trim() : "(not provided)";
         List<String> areas = normalizeFocusAreas(focusAreas);
         QuestionCategory currentCategory = category != null ? category : QuestionCategory.ROLE_FUNDAMENTAL;
+        boolean isFirstIntroQuestion = currentCategory == QuestionCategory.INTRODUCTION
+                && !isFollowUp
+                && !StringUtils.hasText(previousQuestion)
+                && (questionHistory == null || questionHistory.isEmpty());
 
         StringBuilder sb = new StringBuilder(2600);
 
@@ -113,7 +117,9 @@ public class PromptBuilder {
         sb.append("=====================================\n\n");
         sb.append("- Category: ").append(currentCategory.name()).append('\n');
         sb.append("- Generate exactly one question for this category.\n");
-        sb.append("- ").append(categoryInstruction(currentCategory)).append("\n\n");
+        sb.append("- ")
+                .append(categoryInstruction(currentCategory, isFirstIntroQuestion))
+                .append("\n\n");
 
         sb.append("=====================================\n");
         sb.append("REALISM\n");
@@ -165,7 +171,14 @@ public class PromptBuilder {
         sb.append("=====================================\n");
         sb.append("ANTI-REPETITION\n");
         sb.append("=====================================\n\n");
-        sb.append("- Do NOT repeat topic, structure, or wording from recent questions.\n");
+        sb.append("- Do NOT repeat topic, structure, intent, or wording from recent questions.\n");
+        sb.append("- Prevent semantic repetition: avoid asking the same underlying question in rephrased form.\n");
+        if (currentCategory == QuestionCategory.INTRODUCTION) {
+            sb.append("- INTRODUCTION-specific prohibitions:\n");
+            sb.append("  - Do NOT ask another self-introduction/background prompt after the first intro question.\n");
+            sb.append("  - Do NOT ask software journey/motivation prompts more than once.\n");
+            sb.append("  - Do NOT generate semantically equivalent intro prompts with different wording.\n");
+        }
         if (!recentQuestions.isEmpty()) {
             sb.append("- Recent questions (most recent first):\n");
             for (int i = 0; i < recentQuestions.size(); i++) {
@@ -193,9 +206,11 @@ public class PromptBuilder {
         return sb.toString();
     }
 
-    private static String categoryInstruction(QuestionCategory category) {
+    private static String categoryInstruction(QuestionCategory category, boolean isFirstIntroQuestion) {
         return switch (category) {
-            case INTRODUCTION -> "Greet the candidate naturally using their name, ask an introduction-style opening question, vary phrasing (e.g., tell me about yourself / walk me through your background / what has your journey been like), keep a warm professional tone, and do not ask technical content.";
+            case INTRODUCTION -> isFirstIntroQuestion
+                    ? "This is the FIRST intro question: greet the candidate naturally using their name and ask for a self-introduction/background in a warm professional tone; do not ask technical content."
+                    : "This is a subsequent intro question: do NOT ask for self-introduction/background again, do NOT ask software journey/motivation again, and do NOT use semantically similar intro intent. Choose a distinct follow-up area only: internship/work experience, resume project discussion, favorite project, learning interests, career goals, or strengths/preferences. Keep it warm, concise, and non-technical.";
             case RESUME_EXPERIENCE -> "Ask about previous experience or a project from the resume.";
             case ROLE_FUNDAMENTAL -> "Ask one core fundamentals question relevant to the target role.";
             case ROLE_SCENARIO -> "Ask one practical role-based scenario and how they would handle it.";
