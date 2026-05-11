@@ -50,14 +50,6 @@ function clearPersistedSession(interviewId) {
   }
 }
 
-function MicIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8" stroke="currentColor" strokeWidth={2}>
-      <rect x="9" y="3" width="6" height="11" rx="3" />
-      <path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" />
-    </svg>
-  );
-}
 
 function InterviewPage() {
   const { id: interviewId } = useParams();
@@ -80,6 +72,14 @@ function InterviewPage() {
   const prevInterviewIdRef = useRef(null);
   const latestAnswerRef = useRef("");
   const transcriptScrollRef = useRef(null);
+  const autoListenTimerRef = useRef(null);
+  const inactivityTimerRef = useRef(null);
+  const countdownIntervalRef = useRef(null);
+  const handleSubmitRef = useRef(null);
+  const userManuallyActedRef = useRef(false);
+  const countdownCancelledRef = useRef(false);
+  const [autoListenPending, setAutoListenPending] = useState(false);
+  const [submitCountdown, setSubmitCountdown] = useState(null);
   const {
     transcript,
     listening,
@@ -139,14 +139,47 @@ function InterviewPage() {
     writePersistedSession(interviewId, { answer });
   }, [interviewId, answer]);
 
+  const INACTIVITY_SECONDS = 5;
+
   useEffect(() => {
-    speakText(question);
+    if (!question) return;
+
+    let isCurrentQuestion = true;
+    userManuallyActedRef.current = false;
+    countdownCancelledRef.current = false;
+    clearTimeout(autoListenTimerRef.current);
+    clearInterval(countdownIntervalRef.current);
+    setSubmitCountdown(null);
+    setAutoListenPending(false);
+
+    speakText(question, {
+      onEnd: () => {
+        if (!isCurrentQuestion || userManuallyActedRef.current) return;
+        setAutoListenPending(true);
+        autoListenTimerRef.current = setTimeout(() => {
+          if (!isCurrentQuestion || userManuallyActedRef.current) return;
+          setAutoListenPending(false);
+          resetTranscript();
+          startListening();
+        }, 1500);
+      },
+    });
+
+    return () => {
+      isCurrentQuestion = false;
+      clearTimeout(autoListenTimerRef.current);
+      setAutoListenPending(false);
+    };
+  // startListening and resetTranscript are stable useCallback refs — safe to omit
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question]);
 
   useEffect(() => {
     return () => {
-      // Ensure TTS does not continue after leaving interview route.
       stopSpeaking();
+      clearTimeout(autoListenTimerRef.current);
+      clearTimeout(inactivityTimerRef.current);
+      clearInterval(countdownIntervalRef.current);
     };
   }, []);
 
@@ -160,6 +193,57 @@ function InterviewPage() {
     if (!transcriptScrollRef.current) return;
     transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
   }, [answer]);
+
+  // Phase 1: 5s silent inactivity wait (runs whether answer is empty or not);
+  // Phase 2: 5-4-3-2-1 visible countdown then auto-submit (or stop mic if nothing was said)
+  useEffect(() => {
+    clearTimeout(inactivityTimerRef.current);
+    clearInterval(countdownIntervalRef.current);
+    setSubmitCountdown(null);
+
+    if (!listening) return;
+
+    // Phase 1 — silent 5s wait; resets on every transcript update or when mic first starts
+    inactivityTimerRef.current = setTimeout(() => {
+      // Phase 2 — show the visible countdown
+      countdownCancelledRef.current = false;
+      let remaining = INACTIVITY_SECONDS;
+      setSubmitCountdown(remaining);
+
+      countdownIntervalRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(countdownIntervalRef.current);
+          setSubmitCountdown(null);
+          if (!countdownCancelledRef.current) {
+            if (latestAnswerRef.current.trim()) {
+              handleSubmitRef.current?.();
+            } else {
+              stopListening();
+            }
+          }
+        } else {
+          setSubmitCountdown(remaining);
+        }
+      }, 1000);
+    }, INACTIVITY_SECONDS * 1000);
+
+    return () => {
+      clearTimeout(inactivityTimerRef.current);
+      clearInterval(countdownIntervalRef.current);
+    };
+  // INACTIVITY_SECONDS is a constant defined in render scope — safe to omit
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answer, listening]);
+
+  // Clear both timers whenever mic stops
+  useEffect(() => {
+    if (!listening) {
+      clearTimeout(inactivityTimerRef.current);
+      clearInterval(countdownIntervalRef.current);
+      setSubmitCountdown(null);
+    }
+  }, [listening]);
 
   useEffect(() => {
     let isMounted = true;
@@ -226,18 +310,23 @@ function InterviewPage() {
   }
 
   async function handleSubmitAnswer() {
-    if (!answer.trim() || !interviewId) {
+    if (isSubmitting) return;
+    const currentAnswer = latestAnswerRef.current;
+    if (!currentAnswer.trim() || !interviewId) {
       setSubmitError("Please record your response first.");
       return;
     }
 
+    clearTimeout(inactivityTimerRef.current);
+    clearInterval(countdownIntervalRef.current);
+    setSubmitCountdown(null);
     stopListening();
     setSubmitError("");
     setIsSubmitting(true);
     try {
       const response = await apiRequest(`/interview/${interviewId}/answer`, {
         method: "POST",
-        body: JSON.stringify({ answer }),
+        body: JSON.stringify({ answer: currentAnswer }),
       });
 
       if (response?.status === "COMPLETED") {
@@ -258,6 +347,16 @@ function InterviewPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  // Keep ref current so inactivity interval can call the latest version without stale closures
+  handleSubmitRef.current = handleSubmitAnswer;
+
+  function handleCancelCountdown() {
+    countdownCancelledRef.current = true;
+    clearTimeout(inactivityTimerRef.current);
+    clearInterval(countdownIntervalRef.current);
+    setSubmitCountdown(null);
   }
 
   function handleCopyInterviewId() {
@@ -335,46 +434,46 @@ function InterviewPage() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col items-center sm:mt-8">
-              <button
-                type="button"
-                onClick={() => {
-                  if (listening) {
-                    stopListening();
-                    return;
-                  }
-                  stopSpeaking();
-                  resetTranscript();
-                  startListening();
-                }}
-                disabled={unsupported || micState === "processing"}
-                className={`flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-2 transition disabled:cursor-not-allowed disabled:opacity-60 sm:h-18 sm:w-18 ${
-                  micState === "listening"
-                    ? "animate-pulse border-[#852a4e] bg-[rgba(133,42,78,0.12)] text-[#852a4e] shadow-[0_0_0_6px_rgba(133,42,78,0.14)] sm:shadow-[0_0_0_8px_rgba(133,42,78,0.14)]"
-                    : micState === "processing"
-                      ? "border-[#f59e0b] bg-[#fef3c7] text-[#b45309] shadow-[0_0_0_6px_rgba(245,158,11,0.15)]"
-                      : "border-[rgba(133,42,78,0.45)] bg-white text-[#852a4e] shadow-[0_0_0_6px_rgba(133,42,78,0.08)] hover:bg-[rgba(133,42,78,0.06)]"
-                }`}
-                aria-label={listening ? "Stop microphone" : "Start microphone"}
-              >
-                {micState === "processing" ? (
-                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#fcd34d] border-t-[#b45309] sm:h-6 sm:w-6" />
-                ) : (
-                  <span className="scale-90 sm:scale-100">
-                    <MicIcon />
-                  </span>
-                )}
-              </button>
-              <p className="mt-3 px-2 text-center text-base font-medium text-[#475569] sm:mt-4 sm:text-lg">
-                {micState === "listening"
-                  ? "Listening..."
-                  : micState === "processing"
-                    ? "Submitting response..."
-                    : isSessionLoading && !question
-                      ? "Getting things ready..."
-                      : "Tap to start speaking"}
-              </p>
-              {unsupported ? <p className="mt-2 text-xs text-[#dc2626]">Voice input works best in Chrome</p> : null}
+            <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8">
+              {micState === "processing" ? (
+                <>
+                  <span className="h-14 w-14 animate-spin rounded-full border-2 border-[rgba(133,42,78,0.15)] border-t-[#852a4e]" />
+                  <p className="text-base font-medium text-[#475569] sm:text-lg">Submitting response...</p>
+                </>
+              ) : (
+                <>
+                  <div className="relative flex items-center justify-center">
+                    {micState === "listening" && (
+                      <>
+                        <span className="absolute h-20 w-20 animate-ping rounded-full bg-[rgba(133,42,78,0.15)]" style={{ animationDuration: "1.2s" }} />
+                        <span className="absolute h-14 w-14 animate-ping rounded-full bg-[rgba(133,42,78,0.12)]" style={{ animationDuration: "1.2s", animationDelay: "0.35s" }} />
+                      </>
+                    )}
+                    <span
+                      className={`relative flex h-14 w-14 items-center justify-center rounded-full border-2 transition-colors duration-300 ${
+                        micState === "listening"
+                          ? "border-[#852a4e] bg-[rgba(133,42,78,0.1)] text-[#852a4e]"
+                          : "border-[rgba(133,42,78,0.3)] bg-white text-[rgba(133,42,78,0.5)]"
+                      }`}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7" stroke="currentColor" strokeWidth={2}>
+                        <rect x="9" y="3" width="6" height="11" rx="3" />
+                        <path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" />
+                      </svg>
+                    </span>
+                  </div>
+                  <p className={`text-base font-medium sm:text-lg ${micState === "listening" ? "font-semibold text-[#852a4e]" : "text-[#475569]"}`}>
+                    {micState === "listening"
+                      ? "Listening..."
+                      : autoListenPending
+                        ? "Get ready to answer..."
+                        : isSessionLoading && !question
+                          ? "Getting things ready..."
+                          : ""}
+                  </p>
+                </>
+              )}
+              {unsupported ? <p className="text-xs text-[#dc2626]">Voice input works best in Chrome</p> : null}
             </div>
 
             <div className="mx-auto mt-5 w-full max-w-4xl rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-black/3 sm:mt-6 sm:px-6 sm:py-4">
@@ -394,37 +493,14 @@ function InterviewPage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-4 flex w-full max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.speechSynthesis?.speaking) {
-                    stopSpeaking();
-                    return;
-                  }
-                  speakText(question);
-                }}
-                disabled={listening}
-                className="w-full cursor-pointer rounded-xl border border-[#e2e8f0] bg-white px-4 py-2.5 text-base font-medium text-[#374151] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition hover:border-[rgba(133,42,78,0.2)] hover:bg-[rgba(133,42,78,0.04)] disabled:cursor-not-allowed disabled:opacity-55 sm:w-auto sm:text-sm"
-              >
-                🔊 Replay Question
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitAnswer}
-                disabled={isSubmitting || !answer.trim()}
-                className="inline-flex w-full min-w-0 cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#852a4e] to-[#a83d62] px-6 py-2.5 text-base font-semibold text-white shadow-[0_4px_16px_rgba(133,42,78,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100 sm:w-auto sm:min-w-44 sm:px-8 sm:text-sm"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
-                    Processing...
-                  </>
-                ) : (
-                  "Submit Answer →"
-                )}
-              </button>
-            </div>
+            {submitCountdown !== null && (
+              <div className="mx-auto mt-4 w-full max-w-4xl rounded-lg border border-[rgba(133,42,78,0.15)] bg-[rgba(133,42,78,0.04)] px-4 py-2.5">
+                <span className="text-sm text-[#64748b]">
+                  Submitting in{" "}
+                  <span className="font-semibold text-[#852a4e]">{submitCountdown}s</span>
+                </span>
+              </div>
+            )}
 
             {!isBackendSynced ? (
               <p className="mt-3 text-center text-xs text-[#64748b]">Syncing latest session from server...</p>

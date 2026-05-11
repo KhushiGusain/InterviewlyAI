@@ -1,9 +1,15 @@
-export function speakText(text) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
+export function speakText(text, { onEnd } = {}) {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    onEnd?.();
+    return;
+  }
 
   const synth = window.speechSynthesis;
   const content = typeof text === "string" ? text.trim() : "";
-  if (!content) return;
+  if (!content) {
+    onEnd?.();
+    return;
+  }
 
   synth.cancel();
 
@@ -26,6 +32,23 @@ export function speakText(text) {
     utterance.lang = preferredVoice.lang || "en-US";
   } else {
     utterance.lang = "en-US";
+  }
+
+  if (onEnd) {
+    // fireOnce guards against Chrome's known bug of onend firing multiple times
+    let fallbackTimer;
+    let called = false;
+    const fireOnce = () => {
+      if (called) return;
+      called = true;
+      clearTimeout(fallbackTimer);
+      onEnd();
+    };
+    utterance.onend = fireOnce;
+    // Fallback in case speechSynthesis.onend never fires (~130 wpm + 3s buffer, min 6s)
+    const wordCount = content.split(/\s+/).length;
+    const fallbackMs = Math.max(6000, Math.ceil((wordCount / 130) * 60 * 1000) + 3000);
+    fallbackTimer = setTimeout(fireOnce, fallbackMs);
   }
 
   synth.speak(utterance);
