@@ -28,12 +28,12 @@ const FEATURES = [
 
 function LandingHeroPanel() {
   return (
-    <aside className="flex min-h-0 max-w-[520px] flex-col pt-12 lg:max-w-[560px]">
-      <p className="mb-5 inline-flex w-fit items-center rounded-full border border-[rgba(133,42,78,0.22)] bg-[rgba(133,42,78,0.06)] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-[#852a4e]">
+    <aside className="flex min-h-0 w-full max-w-full flex-col pt-4 sm:pt-8 lg:max-w-[560px] lg:pt-12">
+      <p className="mb-4 inline-flex w-fit max-w-full items-center rounded-full border border-[rgba(133,42,78,0.22)] bg-[rgba(133,42,78,0.06)] px-2.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#852a4e] sm:mb-5 sm:px-3 sm:text-[11px] sm:tracking-[0.14em]">
         AI-Powered Interview Platform
       </p>
 
-      <h1 className="text-[2.15rem] font-semibold leading-[1.12] tracking-[-0.03em] text-[#0f172a] sm:text-[2.5rem] lg:text-[2.75rem]">
+      <h1 className="text-[1.75rem] font-semibold leading-[1.12] tracking-[-0.03em] text-[#0f172a] sm:text-[2.15rem] md:text-[2.5rem] lg:text-[2.75rem]">
         <span className="block text-[#0f172a]">Your Personal</span>
         <span className="mt-1 block bg-linear-to-r from-[#852a4e] via-[#a83d62] to-[#c2547a] bg-clip-text text-transparent">
           AI Interviewer.
@@ -43,12 +43,12 @@ function LandingHeroPanel() {
         </span>
       </h1>
 
-      <p className="mt-5 max-w-md text-[0.9375rem] leading-relaxed text-[#475569] sm:text-base">
+      <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-[#475569] sm:mt-5 sm:text-base">
         Practice real interviews, get AI feedback, and build confidence to land
         your dream job—all in one focused workspace.
       </p>
 
-      <div className="mt-8 grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
+      <div className="mt-6 grid grid-cols-1 gap-2 sm:mt-8 sm:grid-cols-2 sm:gap-2.5 md:gap-3">
         {FEATURES.map((item) => (
           <article
             key={item.title}

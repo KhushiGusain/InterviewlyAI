@@ -129,7 +129,7 @@ function StatusBadge({ status }) {
   }
   if (normalizedStatus === "IN_PROGRESS") {
     return (
-      <span className="rounded-full border border-[#f59e0b]/35 bg-[#fef3c7] px-3 py-0.5 text-xs font-medium text-[#b45309]">
+      <span className="max-w-44 rounded-full border border-[#f59e0b]/35 bg-[#fef3c7] px-2 py-1 text-center text-[10px] font-medium leading-tight text-[#b45309] sm:max-w-none sm:px-3 sm:py-0.5 sm:text-xs">
         Continue Interview
       </span>
     );
@@ -402,31 +402,33 @@ function DashboardPage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-y-auto overflow-x-hidden bg-white text-[#1e293b]"
+      className="relative min-h-dvh overflow-y-auto overflow-x-hidden bg-white text-[#1e293b]"
       data-dashboard-loaded={Boolean(dashboardData)}
     >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
 
       <div className="relative z-10 flex flex-col">
         {/* Navbar */}
-        <nav className="flex items-center justify-between px-8 py-5">
-          <span className="text-[1.6rem] font-semibold tracking-tight text-[#0f172a]">
+        <nav className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 md:px-8">
+          <span className="min-w-0 shrink truncate text-[1.35rem] font-semibold tracking-tight text-[#0f172a] sm:text-[1.5rem] md:text-[1.6rem]">
             Interviewly<span className="text-[#852a4e]">AI</span>
           </span>
-          <div className="relative" ref={profileMenuRef}>
+          <div className="relative shrink-0" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(133,42,78,0.16)] bg-white px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.08),0_20px_48px_rgba(0,0,0,0.06)] ring-1 ring-black/4 transition hover:border-[rgba(133,42,78,0.26)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1),0_28px_56px_rgba(133,42,78,0.07)]"
+              className="flex max-w-full cursor-pointer items-center gap-1.5 rounded-2xl border border-[rgba(133,42,78,0.16)] bg-white px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.08),0_20px_48px_rgba(0,0,0,0.06)] ring-1 ring-black/4 transition hover:border-[rgba(133,42,78,0.26)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1),0_28px_56px_rgba(133,42,78,0.07)] sm:gap-2 sm:px-3 sm:py-2"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#852a4e] to-[#a83d62] text-sm font-bold text-white shadow-[0_2px_8px_rgba(133,42,78,0.35)] ring-2 ring-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-[#852a4e] to-[#a83d62] text-sm font-bold text-white shadow-[0_2px_8px_rgba(133,42,78,0.35)] ring-2 ring-white">
                 {displayName.charAt(0).toUpperCase()}
               </div>
-              <div className="text-left leading-tight">
-                <p className="text-sm font-medium text-[#0f172a]">{displayName}</p>
+              <div className="hidden min-w-0 text-left leading-tight sm:block">
+                <p className="max-w-[140px] truncate text-sm font-medium text-[#0f172a] md:max-w-[220px]">
+                  {displayName}
+                </p>
                 <p className="text-[11px] text-[#64748b]">Free Plan</p>
               </div>
-              <span className="text-[#64748b]">
+              <span className="shrink-0 text-[#64748b] sm:ml-0">
                 <ChevronDownIcon />
               </span>
             </button>
@@ -446,17 +448,19 @@ function DashboardPage() {
         </nav>
 
         {/* Header Banner */}
-        <div className="relative mx-8 mb-6 overflow-hidden rounded-2xl border border-[rgba(133,42,78,0.15)] bg-white px-8 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05),0_12px_40px_rgba(0,0,0,0.06)] ring-1 ring-black/4">
-          <h1 className="mb-1 text-3xl font-bold text-[#0f172a]">Good to see you, {displayName}!</h1>
+        <div className="relative mx-auto mb-4 w-full max-w-[1280px] overflow-hidden rounded-xl border border-[rgba(133,42,78,0.15)] bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05),0_12px_40px_rgba(0,0,0,0.06)] ring-1 ring-black/4 sm:mb-5 sm:rounded-2xl sm:px-6 sm:py-4 md:mb-6 md:px-8">
+          <h1 className="mb-1 wrap-break-word text-2xl font-bold text-[#0f172a] sm:text-3xl">
+            Good to see you, {displayName}!
+          </h1>
           <p className="text-sm text-[#64748b]">Let&apos;s ace your next interview.</p>
         </div>
 
         {/* Main grid */}
-        <div className="mx-8 mb-8 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="mx-auto mb-6 grid w-full max-w-[1280px] gap-4 px-4 sm:mb-8 sm:gap-5 sm:px-6 md:px-8 lg:grid-cols-[1.15fr_0.85fr]">
           {/* Left — Create New Interview */}
-          <div className="rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
-            <div className="mb-1 flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-[#0f172a]">Create New Interview</h2>
+          <div className="rounded-xl border border-[rgba(133,42,78,0.2)] bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4 sm:rounded-2xl sm:p-5">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-[#0f172a] sm:text-lg">Create New Interview</h2>
               <SparkleIcon />
             </div>
             <p className="mb-4 text-xs text-[#64748b]">Tailor your interview experience to your goals.</p>
@@ -476,7 +480,7 @@ function DashboardPage() {
                       placeholder="e.g. Software Engineer"
                       value={formData.role}
                       onChange={handleChange}
-                      className={`h-10 w-full rounded-xl bg-[#fafbff] pl-[34px] pr-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] ${
+                      className={`h-10 min-h-10 w-full rounded-xl bg-[#fafbff] pl-[34px] pr-3 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] ${
                         roleError
                           ? "border border-[#f87171] focus:border-[#dc2626] focus:shadow-[0_0_0_3px_rgba(220,38,38,0.12)]"
                           : "border border-[#e2e8f0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
@@ -498,7 +502,7 @@ function DashboardPage() {
                       placeholder="e.g. Google, Microsoft (optional)"
                       value={formData.company}
                       onChange={handleChange}
-                      className="h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[34px] pr-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                      className="h-10 min-h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[34px] pr-3 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                     />
                   </span>
                 </label>
@@ -513,7 +517,7 @@ function DashboardPage() {
                   value={formData.jobDescription}
                   onChange={handleChange}
                   rows={2}
-                  className="w-full resize-none rounded-xl border border-[#e2e8f0] bg-[#fafbff] p-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                  className="w-full resize-none rounded-xl border border-[#e2e8f0] bg-[#fafbff] p-3 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                 />
               </label>
 
@@ -523,13 +527,13 @@ function DashboardPage() {
                   Focus Areas{" "}
                   <span className="font-normal text-[#94a3b8]">(Select all that apply)</span>
                 </p>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="flex flex-wrap gap-2 sm:gap-2.5">
                   {[...FOCUS_AREAS, ...customTopics].map((area) => (
                     <button
                       key={area}
                       type="button"
                       onClick={() => toggleFocus(area)}
-                      className={`flex min-w-[84px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                      className={`flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-medium transition sm:min-w-[80px] sm:px-3 ${
                         formData.focusAreas.includes(area)
                           ? "border-[#852a4e] bg-[rgba(133,42,78,0.1)] text-[#852a4e]"
                           : "border-[#e2e8f0] bg-white text-[#64748b] hover:border-[rgba(133,42,78,0.25)]"
@@ -568,10 +572,10 @@ function DashboardPage() {
                       resumeInputRef.current?.click();
                     }
                   }}
-                  className="flex h-[58px] cursor-pointer items-center justify-center gap-3 rounded-xl border border-dashed border-[#cbd5e1] bg-[#fafbff] px-4 text-[#64748b] transition hover:border-[rgba(133,42,78,0.3)] hover:bg-[rgba(133,42,78,0.03)]"
+                  className="flex min-h-[58px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#cbd5e1] bg-[#fafbff] px-3 py-3 text-center text-[#64748b] transition hover:border-[rgba(133,42,78,0.3)] hover:bg-[rgba(133,42,78,0.03)] sm:flex-row sm:gap-3 sm:px-4 sm:text-left"
                 >
                   <UploadIcon />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs leading-tight text-[#475569]">
                       {resumeFileName || "Click to upload or drag and drop"}
                     </p>
@@ -594,7 +598,7 @@ function DashboardPage() {
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="mt-4 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#852a4e] to-[#a83d62] text-sm font-semibold tracking-wide text-white shadow-[0_4px_16px_rgba(133,42,78,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-4 flex h-11 min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#852a4e] to-[#a83d62] text-sm font-semibold tracking-wide text-white shadow-[0_4px_16px_rgba(133,42,78,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? (
                 <>
@@ -623,11 +627,11 @@ function DashboardPage() {
           </div>
 
           {/* Right column */}
-          <div className="flex flex-col gap-5">
+          <div className="flex min-h-0 flex-col gap-4 sm:gap-5">
             {/* Your Progress */}
-            <div className="rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
-              <h2 className="mb-4 text-base font-semibold text-[#0f172a]">Your Progress</h2>
-              <div className="grid grid-cols-4 gap-3 text-center">
+            <div className="rounded-xl border border-[rgba(133,42,78,0.2)] bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4 sm:rounded-2xl sm:p-6">
+              <h2 className="mb-3 text-base font-semibold text-[#0f172a] sm:mb-4">Your Progress</h2>
+              <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4 sm:gap-3">
                 {[
                   { icon: <CalendarIcon />, value: String(dashboardData?.totalInterviews ?? 0), label: "Interviews", color: "text-[#852a4e]", bg: "bg-[rgba(133,42,78,0.12)]" },
                   { icon: <CheckCircleIcon />, value: String(dashboardData?.completedInterviews ?? 0), label: "Completed", color: "text-[#15803d]", bg: "bg-[rgba(22,163,74,0.12)]" },
@@ -638,16 +642,16 @@ function DashboardPage() {
                     <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${color}`}>
                       {icon}
                     </div>
-                    <p className="text-xl font-bold text-[#0f172a]">{value}</p>
-                    <p className="text-[11px] leading-tight text-[#64748b]">{label}</p>
+                    <p className="text-lg font-bold text-[#0f172a] sm:text-xl">{value}</p>
+                    <p className="text-[10px] leading-tight text-[#64748b] sm:text-[11px]">{label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Recent Interviews */}
-            <div className="rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
-              <div className="mb-4 flex items-center justify-between">
+            <div className="rounded-xl border border-[rgba(133,42,78,0.2)] bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4 sm:rounded-2xl sm:p-6">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4">
                 <h2 className="text-base font-semibold text-[#0f172a]">Recent Interviews</h2>
                 <button
                   type="button"
@@ -663,35 +667,31 @@ function DashboardPage() {
                   <div
                     key={item.id}
                     onClick={() => navigate(getInterviewNavigationPath(item))}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:border-[rgba(133,42,78,0.22)] hover:bg-white hover:shadow-[0_4px_14px_rgba(0,0,0,0.06)]"
+                    className="flex cursor-pointer flex-col gap-3 rounded-xl border border-[#e2e8f0] bg-[#fafbff] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:border-[rgba(133,42,78,0.22)] hover:bg-white hover:shadow-[0_4px_14px_rgba(0,0,0,0.06)] sm:flex-row sm:items-center sm:gap-3 sm:p-4"
                   >
-                    {/* Company logo */}
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(133,42,78,0.12)] text-sm font-bold text-[#852a4e]">
-                      {String(item.role || "?").charAt(0).toUpperCase()}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(133,42,78,0.12)] text-sm font-bold text-[#852a4e]">
+                        {String(item.role || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-[#0f172a]">{item.role}</p>
+                        <p className="text-[11px] text-[#64748b]">{new Date(item.createdAt).toLocaleDateString()}</p>
+                      </div>
                     </div>
 
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-[#0f172a]">{item.role}</p>
-                      <p className="text-[11px] text-[#64748b]">{new Date(item.createdAt).toLocaleDateString()}</p>
-                    </div>
-
-                    {/* Score */}
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm font-semibold text-[#0f172a]">
-                        {item.score === null || item.score === undefined ? "—" : Number(item.score).toFixed(2)}
-                      </p>
-                      <p className="text-[11px] text-[#64748b]">Score</p>
-                    </div>
-
-                    {/* Status badge */}
-                    <div className="shrink-0">
-                      <StatusBadge status={item.status} />
-                    </div>
-
-                    {/* Arrow */}
-                    <div className="shrink-0 text-[#94a3b8]">
-                      <ChevronRightIcon />
+                    <div className="flex items-center justify-between gap-2 border-t border-[#e2e8f0] pt-3 sm:ml-auto sm:border-t-0 sm:pt-0">
+                      <div className="text-left sm:text-right">
+                        <p className="text-sm font-semibold text-[#0f172a]">
+                          {item.score === null || item.score === undefined ? "—" : Number(item.score).toFixed(2)}
+                        </p>
+                        <p className="text-[11px] text-[#64748b]">Score</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <StatusBadge status={item.status} />
+                        <div className="text-[#94a3b8] sm:pl-1">
+                          <ChevronRightIcon />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -702,8 +702,8 @@ function DashboardPage() {
       </div>
 
       {isCustomTopicModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/40 px-4 backdrop-blur-[2px]">
-          <div className="w-full max-w-md rounded-2xl border border-[rgba(133,42,78,0.18)] bg-white p-5 shadow-[0_24px_64px_rgba(0,0,0,0.15)] ring-1 ring-black/4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-[#0f172a]/40 px-4 py-6 backdrop-blur-[2px] sm:items-center sm:py-8">
+          <div className="max-h-[min(90dvh,640px)] w-full max-w-md overflow-y-auto rounded-2xl border border-[rgba(133,42,78,0.18)] bg-white p-4 shadow-[0_24px_64px_rgba(0,0,0,0.15)] ring-1 ring-black/4 sm:p-5">
             <h3 className="text-lg font-semibold text-[#0f172a]">Add Custom Topic</h3>
             <p className="mt-1 text-xs text-[#64748b]">Create a focus area and add it as a selectable chip.</p>
 
@@ -717,23 +717,23 @@ function DashboardPage() {
                   if (customTopicError) setCustomTopicError("");
                 }}
                 placeholder="e.g. Distributed Systems"
-                className="h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                className="h-10 min-h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-3 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
               />
             </label>
             {customTopicError ? <p className="mt-2 text-xs text-[#dc2626]">{customTopicError}</p> : null}
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={closeCustomTopicModal}
-                className="h-9 cursor-pointer rounded-lg border border-[#e2e8f0] bg-white px-3 text-xs font-medium text-[#374151] transition hover:border-[#cbd5e1] hover:bg-[#f8fafc]"
+                className="h-10 w-full cursor-pointer rounded-lg border border-[#e2e8f0] bg-white px-3 text-sm font-medium text-[#374151] transition hover:border-[#cbd5e1] hover:bg-[#f8fafc] sm:h-9 sm:w-auto sm:text-xs"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddCustomTopic}
-                className="h-9 cursor-pointer rounded-lg bg-linear-to-r from-[#852a4e] to-[#a83d62] px-3 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(133,42,78,0.25)] transition hover:brightness-105"
+                className="h-10 w-full cursor-pointer rounded-lg bg-linear-to-r from-[#852a4e] to-[#a83d62] px-3 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(133,42,78,0.25)] transition hover:brightness-105 sm:h-9 sm:w-auto sm:text-xs"
               >
                 Add Topic
               </button>

@@ -7,9 +7,9 @@ function StageBar({ label, score, colorClass }) {
   const width = `${(bounded / 10) * 100}%`;
   return (
     <div>
-      <div className="mb-1.5 flex items-baseline justify-between text-sm">
-        <span className="text-[#64748b]">{label}</span>
-        <span className="font-semibold text-[#0f172a]">{bounded.toFixed(1)}/10</span>
+      <div className="mb-1.5 flex items-baseline justify-between gap-2 text-xs sm:text-sm">
+        <span className="min-w-0 shrink text-[#64748b]">{label}</span>
+        <span className="shrink-0 font-semibold text-[#0f172a]">{bounded.toFixed(1)}/10</span>
       </div>
       <div className="h-1.5 rounded-full bg-[#e2e8f0]">
         <div className={`h-full rounded-full ${colorClass}`} style={{ width }} />
@@ -134,9 +134,9 @@ function ReportsPage() {
 
   if (loading) {
     return (
-      <main className="relative min-h-screen bg-white px-6 py-4 text-[#1e293b]">
+      <main className="relative min-h-dvh bg-white px-4 py-4 text-[#1e293b] sm:px-6">
         <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
-        <div className="relative z-10 flex min-h-[80vh] items-center justify-center">
+        <div className="relative z-10 flex min-h-[75dvh] items-center justify-center">
           <span className="h-10 w-10 animate-spin rounded-full border-2 border-[#e2e8f0] border-t-[#852a4e]" />
         </div>
       </main>
@@ -199,28 +199,30 @@ function ReportsPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-white text-[#1e293b]">
+    <main className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-white text-[#1e293b]">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
 
       <div className="relative z-10 flex flex-col">
-        <header className="flex items-center justify-between px-8 py-5">
-          <span className="text-[1.6rem] font-semibold tracking-tight text-[#0f172a]">
+        <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 md:px-8">
+          <span className="min-w-0 shrink truncate text-[1.35rem] font-semibold tracking-tight text-[#0f172a] sm:text-[1.5rem] md:text-[1.6rem]">
             Interviewly<span className="text-[#852a4e]">AI</span>
           </span>
-          <div className="relative" ref={profileMenuRef}>
+          <div className="relative shrink-0" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(133,42,78,0.16)] bg-white px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.08),0_20px_48px_rgba(0,0,0,0.06)] ring-1 ring-black/4 transition hover:border-[rgba(133,42,78,0.26)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1),0_28px_56px_rgba(133,42,78,0.07)]"
+              className="flex max-w-full cursor-pointer items-center gap-1.5 rounded-2xl border border-[rgba(133,42,78,0.16)] bg-white px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.08),0_20px_48px_rgba(0,0,0,0.06)] ring-1 ring-black/4 transition hover:border-[rgba(133,42,78,0.26)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1),0_28px_56px_rgba(133,42,78,0.07)] sm:gap-2 sm:px-3 sm:py-2"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#852a4e] to-[#a83d62] text-sm font-bold text-white shadow-[0_2px_8px_rgba(133,42,78,0.35)] ring-2 ring-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-[#852a4e] to-[#a83d62] text-sm font-bold text-white shadow-[0_2px_8px_rgba(133,42,78,0.35)] ring-2 ring-white">
                 {displayName.charAt(0).toUpperCase()}
               </div>
-              <div className="text-left leading-tight">
-                <p className="text-sm font-medium text-[#0f172a]">{displayName}</p>
+              <div className="hidden min-w-0 text-left leading-tight sm:block">
+                <p className="max-w-[140px] truncate text-sm font-medium text-[#0f172a] md:max-w-[220px]">
+                  {displayName}
+                </p>
                 <p className="text-[11px] text-[#64748b]">Free Plan</p>
               </div>
-              <span className="text-[#64748b]">
+              <span className="shrink-0 text-[#64748b]">
                 <ChevronDownIcon />
               </span>
             </button>
@@ -239,59 +241,61 @@ function ReportsPage() {
           </div>
         </header>
 
-        <div className="mx-8 mb-8 rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
+        <div className="mx-4 mb-6 w-full max-w-[1280px] rounded-xl border border-[rgba(133,42,78,0.2)] bg-white p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4 sm:mx-auto sm:mb-8 sm:rounded-2xl sm:p-4 md:px-6">
           <button
             type="button"
             onClick={() => navigate("/dashboard")}
-            className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl border border-[rgba(133,42,78,0.22)] bg-[rgba(133,42,78,0.09)] px-4 py-2 text-sm font-semibold text-[#852a4e] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(133,42,78,0.1)] ring-1 ring-black/3 transition hover:border-[rgba(133,42,78,0.32)] hover:bg-[rgba(133,42,78,0.14)] hover:shadow-[0_2px_10px_rgba(133,42,78,0.14)]"
+            className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[rgba(133,42,78,0.22)] bg-[rgba(133,42,78,0.09)] px-4 py-2.5 text-sm font-semibold text-[#852a4e] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(133,42,78,0.1)] ring-1 ring-black/3 transition hover:border-[rgba(133,42,78,0.32)] hover:bg-[rgba(133,42,78,0.14)] hover:shadow-[0_2px_10px_rgba(133,42,78,0.14)] sm:w-auto sm:justify-start sm:py-2"
           >
             <ChevronLeftIcon />
             Back to Dashboard
           </button>
 
-          <section className="mb-3 rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-semibold text-[#0f172a]">Interview Report</h1>
+          <section className="mb-3 rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] sm:px-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="min-w-0">
+                <h1 className="wrap-break-word text-2xl font-semibold text-[#0f172a] sm:text-3xl">Interview Report</h1>
                 {completedAt ? (
-                  <p className="mt-1 text-xs text-[#64748b]">
+                  <p className="mt-1 wrap-break-word text-xs text-[#64748b]">
                     Completed on {new Date(completedAt).toLocaleString()}
                   </p>
                 ) : null}
               </div>
-              <p className="text-xs text-[#43484e]">Interview ID: {id}</p>
+              <p className="wrap-break-word text-xs text-[#94a3b8] sm:max-w-48 sm:shrink-0 sm:text-right md:max-w-none">
+                Interview ID: {id}
+              </p>
             </div>
           </section>
 
-          <section className="mb-3 grid gap-3 lg:grid-cols-[0.72fr_1.28fr]">
-            <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/4">
+          <section className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-[0.72fr_1.28fr]">
+            <div className="rounded-xl border border-[#e2e8f0] bg-white p-3 shadow-[0_4px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/4 sm:p-4">
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[#475569]">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(133,42,78,0.1)] text-[#852a4e]">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(133,42,78,0.1)] text-[#852a4e]">
                   <OverallScoreIcon />
                 </span>
                 Overall Score
               </div>
               <div className="flex flex-col items-center justify-center gap-3 py-2">
                 <div
-                  className="relative flex h-28 w-28 items-center justify-center rounded-full p-[3px] shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]"
+                  className="relative flex h-24 w-24 items-center justify-center rounded-full p-[3px] shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)] sm:h-28 sm:w-28"
                   style={{
                     background: `conic-gradient(${overallTone.ring} ${scorePercent}%, #e2e8f0 ${scorePercent}% 100%)`,
                   }}
                 >
-                  <div className="flex h-[102px] w-[102px] flex-col items-center justify-center rounded-full border border-[#e2e8f0] bg-white shadow-[inset_0_2px_8px_rgba(0,0,0,0.04)]">
-                    <p className="text-5xl font-bold leading-none text-[#0f172a]">{overallScore.toFixed(1)}</p>
-                    <p className="mt-0.5 text-base font-medium text-[#64748b]">/10</p>
+                  <div className="flex h-[86px] w-[86px] flex-col items-center justify-center rounded-full border border-[#e2e8f0] bg-white shadow-[inset_0_2px_8px_rgba(0,0,0,0.04)] sm:h-[102px] sm:w-[102px]">
+                    <p className="text-4xl font-bold leading-none text-[#0f172a] sm:text-5xl">{overallScore.toFixed(1)}</p>
+                    <p className="mt-0.5 text-sm font-medium text-[#64748b] sm:text-base">/10</p>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-[#64748b]">
+                <p className="text-center text-sm font-medium text-[#64748b]">
                   Performance: <span className={`font-semibold ${overallTone.text}`}>{performanceLabel}</span>
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/4">
+            <div className="rounded-xl border border-[#e2e8f0] bg-white p-3 shadow-[0_4px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/4 sm:p-4">
               <h2 className="mb-3 text-sm font-semibold text-[#0f172a]">Performance by Stage</h2>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5">
                   <div className="mb-2 flex items-center gap-2 text-[#852a4e]">
                     <StageIcon type="intro" />
@@ -317,8 +321,8 @@ function ReportsPage() {
             </div>
           </section>
 
-          <section className="mt-3 rounded-xl border border-[#e2e8f0] bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-black/4">
-            <div className="mb-3 flex items-center justify-between">
+          <section className="mt-3 rounded-xl border border-[#e2e8f0] bg-white px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-black/4 sm:px-4">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-base font-semibold text-[#0f172a]">Detailed Feedback</h3>
               <button
                 type="button"
@@ -330,7 +334,7 @@ function ReportsPage() {
                   });
                   setExpandedRows(nextState);
                 }}
-                className="cursor-pointer text-xs font-semibold text-[#852a4e] transition hover:text-[#6b2240]"
+                className="w-fit cursor-pointer text-left text-xs font-semibold text-[#852a4e] transition hover:text-[#6b2240] sm:text-right"
               >
                 Expand All
               </button>
@@ -343,10 +347,12 @@ function ReportsPage() {
                     <button
                       type="button"
                       onClick={() => toggleRow(index)}
-                      className="flex w-full items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left transition hover:bg-[rgba(133,42,78,0.05)]"
+                      className="flex w-full flex-col gap-2 rounded-lg px-1 py-1.5 text-left transition hover:bg-[rgba(133,42,78,0.05)] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-2"
                     >
-                      <p className="text-sm text-[#334155]">{item.question || `Question ${index + 1}`}</p>
-                      <div className="flex shrink-0 items-center gap-2 text-[#64748b]">
+                      <p className="min-w-0 flex-1 wrap-break-word text-sm text-[#334155]">
+                        {item.question || `Question ${index + 1}`}
+                      </p>
+                      <div className="flex shrink-0 items-center justify-between gap-2 text-[#64748b] sm:justify-end">
                         <span className={`text-sm font-semibold ${getScoreTone(Number(item.score ?? 0)).text}`}>
                           {Number(item.score ?? 0).toFixed(0)}/10
                         </span>
@@ -354,7 +360,7 @@ function ReportsPage() {
                       </div>
                     </button>
                     {expandedRows[index] ? (
-                      <div className="mx-2 mt-1 space-y-1 rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5 text-xs text-[#475569]">
+                      <div className="mx-0 mt-1 space-y-1 rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5 text-xs text-[#475569] sm:mx-2">
                         {item.answer ? (
                           <p>
                             <span className="font-semibold text-[#0f172a]">Answer:</span> {item.answer}

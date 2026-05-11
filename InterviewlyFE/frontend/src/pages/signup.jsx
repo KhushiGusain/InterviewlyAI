@@ -63,20 +63,22 @@ function SignupPage() {
   }
 
   return (
-    <main className="relative h-screen overflow-hidden bg-white py-4 text-[#1e293b] sm:py-5">
-      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
+    <main className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-white py-3 text-[#1e293b] sm:py-4 md:py-5">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
 
-      <div className="relative z-10 flex h-full w-full flex-col">
+      <div className="relative z-10 flex min-h-min w-full flex-col">
         <NavbarBrand />
 
-        <section className="mx-auto grid min-h-0 w-full max-w-[1180px] flex-1 items-start gap-5 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <LandingHeroPanel />
+        <section className="mx-auto grid w-full max-w-[1180px] auto-rows-min grid-cols-1 content-start gap-6 px-4 pb-10 pt-1 sm:gap-7 sm:px-6 sm:pb-12 sm:pt-2 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-5 lg:pb-16">
+          <div className="order-2 min-h-0 w-full lg:order-1">
+            <LandingHeroPanel />
+          </div>
 
           <section
-            className="w-full max-w-[470px] justify-self-end self-start rounded-3xl border border-[rgba(133,42,78,0.2)] bg-white p-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4"
+            className="order-1 w-full max-w-full justify-self-stretch rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4 sm:rounded-3xl sm:p-6 lg:order-2 lg:max-w-[470px] lg:justify-self-end lg:self-start lg:p-7"
             aria-label="Create account form"
           >
-            <h2 className="mb-5 text-center text-[2rem] font-medium tracking-[0.08em] text-[#0f172a]">
+            <h2 className="mb-4 text-center text-2xl font-medium tracking-[0.08em] text-[#0f172a] sm:mb-5 sm:text-[1.85rem] lg:text-[2rem]">
               SIGN UP
             </h2>
             <form className="grid gap-3.5" onSubmit={handleSignupSubmit}>
@@ -94,7 +96,7 @@ function SignupPage() {
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     required
-                    className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-4 text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                    className="h-11 w-full min-h-11 rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-4 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                   />
                 </span>
               </label>
@@ -113,7 +115,7 @@ function SignupPage() {
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     required
-                    className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-4 text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                    className="h-11 w-full min-h-11 rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-4 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                   />
                 </span>
               </label>
@@ -132,7 +134,7 @@ function SignupPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     required
-                    className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-10 text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                    className="h-11 w-full min-h-11 rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-10 text-base text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                   />
                   <button
                     type="button"
