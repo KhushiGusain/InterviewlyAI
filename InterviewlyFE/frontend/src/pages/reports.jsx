@@ -8,10 +8,10 @@ function StageBar({ label, score, colorClass }) {
   return (
     <div>
       <div className="mb-1.5 flex items-baseline justify-between text-sm">
-        <span className="text-[#cfe0ff]">{label}</span>
-        <span className="font-semibold text-white">{bounded.toFixed(1)}/10</span>
+        <span className="text-[#64748b]">{label}</span>
+        <span className="font-semibold text-[#0f172a]">{bounded.toFixed(1)}/10</span>
       </div>
-      <div className="h-1.5 rounded-full bg-[rgba(147,173,233,0.2)]">
+      <div className="h-1.5 rounded-full bg-[#e2e8f0]">
         <div className={`h-full rounded-full ${colorClass}`} style={{ width }} />
       </div>
     </div>
@@ -22,6 +22,14 @@ function ChevronDownIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth={2.5}>
       <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0" stroke="currentColor" strokeWidth={2.5}>
+      <path d="m15 18-6-6 6-6" />
     </svg>
   );
 }
@@ -126,9 +134,10 @@ function ReportsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#02050d] px-6 py-4 text-[#f4f7ff]">
-        <div className="flex min-h-[80vh] items-center justify-center">
-          <span className="h-10 w-10 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.25)] border-t-[#7b5eff]" />
+      <main className="relative min-h-screen bg-white px-6 py-4 text-[#1e293b]">
+        <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
+        <div className="relative z-10 flex min-h-[80vh] items-center justify-center">
+          <span className="h-10 w-10 animate-spin rounded-full border-2 border-[#e2e8f0] border-t-[#852a4e]" />
         </div>
       </main>
     );
@@ -155,22 +164,22 @@ function ReportsPage() {
   function getScoreTone(score) {
     if (score >= 7) {
       return {
-        text: "text-[#3ddc97]",
-        bar: "from-[#20dca3] to-[#15b27a]",
-        ring: "#20dca3",
+        text: "text-[#15803d]",
+        bar: "from-[#34d399] to-[#059669]",
+        ring: "#059669",
       };
     }
     if (score >= 4) {
       return {
-        text: "text-[#fbbf24]",
-        bar: "from-[#fbbf24] to-[#f59e0b]",
-        ring: "#f59e0b",
+        text: "text-[#b45309]",
+        bar: "from-[#fbbf24] to-[#d97706]",
+        ring: "#d97706",
       };
     }
     return {
-      text: "text-[#fb7185]",
-      bar: "from-[#fb7185] to-[#ef4444]",
-      ring: "#ef4444",
+      text: "text-[#dc2626]",
+      bar: "from-[#fb7185] to-[#dc2626]",
+      ring: "#dc2626",
     };
   }
 
@@ -190,37 +199,38 @@ function ReportsPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_20%_10%,#0f245f_0%,#050918_45%,#03050f_100%)] text-[#f4f7ff]">
-      <div className="pointer-events-none absolute -left-16 bottom-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,#4f46e5_0%,transparent_70%)] opacity-45 blur-md" />
-      <div className="pointer-events-none absolute -right-10 top-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,#2563eb_0%,transparent_70%)] opacity-40 blur-md" />
+    <main className="relative min-h-screen overflow-x-hidden bg-white text-[#1e293b]">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
 
       <div className="relative z-10 flex flex-col">
         <header className="flex items-center justify-between px-8 py-5">
-          <span className="text-[1.6rem] font-semibold tracking-tight text-[#f4f7ff]">
-            Interviewly<span className="text-[#4e8dff]">AI</span>
+          <span className="text-[1.6rem] font-semibold tracking-tight text-[#0f172a]">
+            Interviewly<span className="text-[#852a4e]">AI</span>
           </span>
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(145,172,255,0.2)] bg-[rgba(16,24,46,0.55)] px-3 py-2 backdrop-blur-md transition hover:border-[rgba(145,172,255,0.35)]"
+              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(133,42,78,0.16)] bg-white px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.08),0_20px_48px_rgba(0,0,0,0.06)] ring-1 ring-black/4 transition hover:border-[rgba(133,42,78,0.26)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1),0_28px_56px_rgba(133,42,78,0.07)]"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#4e8dff] to-[#7c3aed] text-sm font-bold text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#852a4e] to-[#a83d62] text-sm font-bold text-white shadow-[0_2px_8px_rgba(133,42,78,0.35)] ring-2 ring-white">
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="text-left leading-tight">
-                <p className="text-sm font-medium text-[#f4f7ff]">{displayName}</p>
-                <p className="text-[11px] text-[#8fa3c8]">Free Plan</p>
+                <p className="text-sm font-medium text-[#0f172a]">{displayName}</p>
+                <p className="text-[11px] text-[#64748b]">Free Plan</p>
               </div>
-              <ChevronDownIcon />
+              <span className="text-[#64748b]">
+                <ChevronDownIcon />
+              </span>
             </button>
 
             {isProfileMenuOpen ? (
-              <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-[rgba(145,172,255,0.22)] bg-[rgba(10,17,35,0.96)] p-1.5 shadow-[0_14px_28px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+              <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-[#e2e8f0] bg-white p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/4">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-[#f4f7ff] transition hover:bg-[rgba(145,172,255,0.12)]"
+                  className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-[#374151] transition hover:bg-[rgba(133,42,78,0.06)]"
                 >
                   Logout
                 </button>
@@ -229,81 +239,77 @@ function ReportsPage() {
           </div>
         </header>
 
-        <div className="mx-8 mb-8 rounded-2xl border border-[rgba(145,172,255,0.16)] bg-[rgba(8,16,36,0.58)] p-4 backdrop-blur-xl">
+        <div className="mx-8 mb-8 rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
           <button
             type="button"
             onClick={() => navigate("/dashboard")}
-            className="mb-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[rgba(145,172,255,0.24)] bg-[rgba(14,24,52,0.56)] px-3 py-2 text-sm font-medium text-[#cfe0ff] transition hover:border-[rgba(145,172,255,0.4)] hover:bg-[rgba(145,172,255,0.12)]"
+            className="mb-3 flex cursor-pointer items-center gap-2 rounded-xl border border-[rgba(133,42,78,0.22)] bg-[rgba(133,42,78,0.09)] px-4 py-2 text-sm font-semibold text-[#852a4e] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_2px_8px_rgba(133,42,78,0.1)] ring-1 ring-black/3 transition hover:border-[rgba(133,42,78,0.32)] hover:bg-[rgba(133,42,78,0.14)] hover:shadow-[0_2px_10px_rgba(133,42,78,0.14)]"
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[rgba(90,129,255,0.2)] text-[#78a5ff]">
-              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" stroke="currentColor" strokeWidth={2.5}>
-                <path d="M15 18 9 12l6-6" />
-              </svg>
-            </span>
+            <ChevronLeftIcon />
             Back to Dashboard
           </button>
 
-          <section className="mb-3 rounded-xl border border-[rgba(145,172,255,0.14)] bg-[rgba(16,28,58,0.45)] px-4 py-3">
+          <section className="mb-3 rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-semibold">Interview Report</h1>
+                <h1 className="text-3xl font-semibold text-[#0f172a]">Interview Report</h1>
                 {completedAt ? (
-                  <p className="mt-1 text-xs text-[#8ea5d1]">
+                  <p className="mt-1 text-xs text-[#64748b]">
                     Completed on {new Date(completedAt).toLocaleString()}
                   </p>
                 ) : null}
               </div>
-              <p className="text-xs text-[#9db1d6]">Interview ID: {id}</p>
+              <p className="text-xs text-[#43484e]">Interview ID: {id}</p>
             </div>
           </section>
 
           <section className="mb-3 grid gap-3 lg:grid-cols-[0.72fr_1.28fr]">
-            <div className="rounded-xl border border-[rgba(145,172,255,0.18)] bg-[linear-gradient(140deg,rgba(20,33,71,0.62),rgba(12,21,44,0.55))] p-4 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
-              <div className="mb-2 flex items-center gap-2 text-sm text-[#9cb2dc]">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(90,129,255,0.2)] text-[#78a5ff]">
+            <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[#475569]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(133,42,78,0.1)] text-[#852a4e]">
                   <OverallScoreIcon />
                 </span>
                 Overall Score
               </div>
               <div className="flex flex-col items-center justify-center gap-3 py-2">
                 <div
-                  className="relative flex h-28 w-28 items-center justify-center rounded-full shadow-[inset_0_0_24px_rgba(79,125,255,0.25)]"
+                  className="relative flex h-28 w-28 items-center justify-center rounded-full p-[3px] shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]"
                   style={{
-                    background: `conic-gradient(${overallTone.ring} ${scorePercent}%, rgba(147,173,233,0.17) ${scorePercent}% 100%)`,
+                    background: `conic-gradient(${overallTone.ring} ${scorePercent}%, #e2e8f0 ${scorePercent}% 100%)`,
                   }}
                 >
-                  <div className="flex h-[102px] w-[102px] flex-col items-center justify-center rounded-full bg-[#0a1431]">
-                    <p className="text-5xl font-bold leading-none">{overallScore.toFixed(1)}</p>
-                    <p className="mt-0.5 text-base font-medium text-[#8ea5d1]">/10</p>
+                  <div className="flex h-[102px] w-[102px] flex-col items-center justify-center rounded-full border border-[#e2e8f0] bg-white shadow-[inset_0_2px_8px_rgba(0,0,0,0.04)]">
+                    <p className="text-5xl font-bold leading-none text-[#0f172a]">{overallScore.toFixed(1)}</p>
+                    <p className="mt-0.5 text-base font-medium text-[#64748b]">/10</p>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-[#9cb2dc]">
+                <p className="text-sm font-medium text-[#64748b]">
                   Performance: <span className={`font-semibold ${overallTone.text}`}>{performanceLabel}</span>
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-[rgba(145,172,255,0.18)] bg-[linear-gradient(140deg,rgba(20,33,71,0.62),rgba(12,21,44,0.55))] p-4 shadow-[0_10px_28px_rgba(0,0,0,0.24)]">
-              <h2 className="mb-3 text-sm font-semibold text-[#d8e4ff]">Performance by Stage</h2>
+            <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/4">
+              <h2 className="mb-3 text-sm font-semibold text-[#0f172a]">Performance by Stage</h2>
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-lg border border-[rgba(145,172,255,0.16)] bg-[rgba(8,15,34,0.35)] p-2.5">
-                  <div className="mb-2 flex items-center gap-2 text-[#76b0ff]">
+                <div className="rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5">
+                  <div className="mb-2 flex items-center gap-2 text-[#852a4e]">
                     <StageIcon type="intro" />
-                    <span className="text-xs font-medium uppercase tracking-wide text-[#cde0ff]">Intro</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-[#374151]">Intro</span>
                   </div>
                   <StageBar label="Score" score={stageScores.intro} colorClass={`bg-linear-to-r ${introTone.bar}`} />
                 </div>
-                <div className="rounded-lg border border-[rgba(145,172,255,0.16)] bg-[rgba(8,15,34,0.35)] p-2.5">
-                  <div className="mb-2 flex items-center gap-2 text-[#a18bff]">
+                <div className="rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5">
+                  <div className="mb-2 flex items-center gap-2 text-[#475569]">
                     <StageIcon type="technical" />
-                    <span className="text-xs font-medium uppercase tracking-wide text-[#cde0ff]">Technical</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-[#374151]">Technical</span>
                   </div>
                   <StageBar label="Score" score={stageScores.technical} colorClass={`bg-linear-to-r ${technicalTone.bar}`} />
                 </div>
-                <div className="rounded-lg border border-[rgba(145,172,255,0.16)] bg-[rgba(8,15,34,0.35)] p-2.5">
-                  <div className="mb-2 flex items-center gap-2 text-[#4ce2ae]">
+                <div className="rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5">
+                  <div className="mb-2 flex items-center gap-2 text-[#059669]">
                     <StageIcon type="behavioral" />
-                    <span className="text-xs font-medium uppercase tracking-wide text-[#cde0ff]">Behavioral</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-[#374151]">Behavioral</span>
                   </div>
                   <StageBar label="Score" score={stageScores.behavioral} colorClass={`bg-linear-to-r ${behavioralTone.bar}`} />
                 </div>
@@ -311,9 +317,9 @@ function ReportsPage() {
             </div>
           </section>
 
-          <section className="mt-3 rounded-xl border border-[rgba(145,172,255,0.14)] bg-[rgba(16,28,58,0.45)] px-4 py-3">
+          <section className="mt-3 rounded-xl border border-[#e2e8f0] bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] ring-1 ring-black/4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#edf3ff]">Detailed Feedback</h3>
+              <h3 className="text-base font-semibold text-[#0f172a]">Detailed Feedback</h3>
               <button
                 type="button"
                 onClick={() => {
@@ -324,23 +330,23 @@ function ReportsPage() {
                   });
                   setExpandedRows(nextState);
                 }}
-                className="text-xs text-[#86a7e3] hover:text-white"
+                className="cursor-pointer text-xs font-semibold text-[#852a4e] transition hover:text-[#6b2240]"
               >
                 Expand All
               </button>
             </div>
 
-            <div className="divide-y divide-[rgba(145,172,255,0.14)]">
+            <div className="divide-y divide-[#e2e8f0]">
               {detailedFeedback.length > 0 ? (
                 detailedFeedback.map((item, index) => (
                   <div key={`${item.question || "question"}-${index}`} className="py-2">
                     <button
                       type="button"
                       onClick={() => toggleRow(index)}
-                      className="flex w-full items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left transition hover:bg-[rgba(145,172,255,0.08)]"
+                      className="flex w-full items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left transition hover:bg-[rgba(133,42,78,0.05)]"
                     >
-                      <p className="text-sm text-[#dce8ff]">{item.question || `Question ${index + 1}`}</p>
-                      <div className="flex shrink-0 items-center gap-2 text-[#9eb7e2]">
+                      <p className="text-sm text-[#334155]">{item.question || `Question ${index + 1}`}</p>
+                      <div className="flex shrink-0 items-center gap-2 text-[#64748b]">
                         <span className={`text-sm font-semibold ${getScoreTone(Number(item.score ?? 0)).text}`}>
                           {Number(item.score ?? 0).toFixed(0)}/10
                         </span>
@@ -348,10 +354,22 @@ function ReportsPage() {
                       </div>
                     </button>
                     {expandedRows[index] ? (
-                      <div className="mx-2 mt-1 rounded-lg border border-[rgba(145,172,255,0.14)] bg-[rgba(7,13,30,0.45)] p-2.5 space-y-1 text-xs text-[#8ea6d1]">
-                        {item.answer ? <p><span className="text-[#b7c9ea]">Answer:</span> {item.answer}</p> : null}
-                        {item.strengths ? <p><span className="text-[#76e6bc]">Strength:</span> {item.strengths}</p> : null}
-                        {item.improvements ? <p><span className="text-[#f9c46f]">Improvement:</span> {item.improvements}</p> : null}
+                      <div className="mx-2 mt-1 space-y-1 rounded-lg border border-[#e2e8f0] bg-[#fafbff] p-2.5 text-xs text-[#475569]">
+                        {item.answer ? (
+                          <p>
+                            <span className="font-semibold text-[#0f172a]">Answer:</span> {item.answer}
+                          </p>
+                        ) : null}
+                        {item.strengths ? (
+                          <p>
+                            <span className="font-semibold text-[#15803d]">Strength:</span> {item.strengths}
+                          </p>
+                        ) : null}
+                        {item.improvements ? (
+                          <p>
+                            <span className="font-semibold text-[#b45309]">Improvement:</span> {item.improvements}
+                          </p>
+                        ) : null}
                         {!item.answer && !item.strengths && !item.improvements ? (
                           <p>{item.feedback || item.comment || "No additional feedback."}</p>
                         ) : null}
@@ -360,13 +378,12 @@ function ReportsPage() {
                   </div>
                 ))
               ) : (
-                <p className="py-3 text-sm text-[#8ea6d1]">No detailed feedback available.</p>
+                <p className="py-3 text-sm text-[#64748b]">No detailed feedback available.</p>
               )}
             </div>
           </section>
 
-          {loading ? <p className="mt-2 text-center text-xs text-[#9bb0d8]">Loading report...</p> : null}
-          {error ? <p className="mt-2 text-center text-xs text-[#ff9ca6]">{error}</p> : null}
+          {error ? <p className="mt-2 text-center text-xs font-medium text-[#dc2626]">{error}</p> : null}
         </div>
       </div>
     </main>
