@@ -112,7 +112,7 @@ function BuildingIcon() {
 
 function SparkleIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-[#a78bfa]">
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-[#852a4e]">
       <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
     </svg>
   );
@@ -122,20 +122,20 @@ function StatusBadge({ status }) {
   const normalizedStatus = String(status || "").toUpperCase();
   if (normalizedStatus === "COMPLETED") {
     return (
-      <span className="rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-0.5 text-xs font-medium text-[#4ade80]">
+      <span className="rounded-full border border-[#22c55e]/35 bg-[#dcfce7] px-3 py-0.5 text-xs font-medium text-[#15803d]">
         Completed
       </span>
     );
   }
   if (normalizedStatus === "IN_PROGRESS") {
     return (
-      <span className="rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-0.5 text-xs font-medium text-[#fbbf24]">
+      <span className="rounded-full border border-[#f59e0b]/35 bg-[#fef3c7] px-3 py-0.5 text-xs font-medium text-[#b45309]">
         Continue Interview
       </span>
     );
   }
   return (
-    <span className="rounded-full border border-[#60a5fa]/40 bg-[#60a5fa]/10 px-3 py-0.5 text-xs font-medium text-[#93c5fd]">
+    <span className="rounded-full border border-[rgba(133,42,78,0.25)] bg-[rgba(133,42,78,0.08)] px-3 py-0.5 text-xs font-medium text-[#852a4e]">
       Start
     </span>
   );
@@ -402,46 +402,41 @@ function DashboardPage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-y-auto overflow-x-hidden text-[#f4f7ff]"
+      className="relative min-h-screen overflow-y-auto overflow-x-hidden bg-white text-[#1e293b]"
       data-dashboard-loaded={Boolean(dashboardData)}
-      style={{ background: "radial-gradient(circle at 20% 10%, #0f245f 0%, #050918 45%, #03050f 100%)" }}
     >
-      {/* Background orbs */}
-      <div className="pointer-events-none absolute right-[6%] top-[5%] h-[280px] w-[280px] rounded-full opacity-90 blur-[1px]"
-        style={{ background: "radial-gradient(circle at 35% 35%, #4db3ff 0%, #275cff 65%, transparent 100%)" }} />
-      <div className="pointer-events-none absolute bottom-[8%] right-[3%] h-[220px] w-[220px] rounded-full opacity-80 blur-[2px]"
-        style={{ background: "radial-gradient(circle at 35% 35%, #61c6ff 0%, #315dff 60%, transparent 100%)" }} />
-      <div className="pointer-events-none absolute bottom-[22%] left-[46%] h-[180px] w-[180px] rounded-full opacity-70 blur-[2px]"
-        style={{ background: "radial-gradient(circle at 35% 35%, #55a2ff 0%, #253fce 65%, transparent 100%)" }} />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
 
       <div className="relative z-10 flex flex-col">
         {/* Navbar */}
         <nav className="flex items-center justify-between px-8 py-5">
-          <span className="text-[1.6rem] font-semibold tracking-tight text-[#f4f7ff]">
-            Interviewly<span className="text-[#4e8dff]">AI</span>
+          <span className="text-[1.6rem] font-semibold tracking-tight text-[#0f172a]">
+            Interviewly<span className="text-[#852a4e]">AI</span>
           </span>
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => setIsProfileMenuOpen((prev) => !prev)}
-              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(145,172,255,0.2)] bg-[rgba(16,24,46,0.55)] px-3 py-2 backdrop-blur-md transition hover:border-[rgba(145,172,255,0.35)]"
+              className="flex cursor-pointer items-center gap-2 rounded-2xl border border-[rgba(133,42,78,0.16)] bg-white px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_1px_2px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.08),0_20px_48px_rgba(0,0,0,0.06)] ring-1 ring-black/4 transition hover:border-[rgba(133,42,78,0.26)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_4px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1),0_28px_56px_rgba(133,42,78,0.07)]"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#4e8dff] to-[#7c3aed] text-sm font-bold text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-[#852a4e] to-[#a83d62] text-sm font-bold text-white shadow-[0_2px_8px_rgba(133,42,78,0.35)] ring-2 ring-white">
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="text-left leading-tight">
-                <p className="text-sm font-medium text-[#f4f7ff]">{displayName}</p>
-                <p className="text-[11px] text-[#8fa3c8]">Free Plan</p>
+                <p className="text-sm font-medium text-[#0f172a]">{displayName}</p>
+                <p className="text-[11px] text-[#64748b]">Free Plan</p>
               </div>
-              <ChevronDownIcon />
+              <span className="text-[#64748b]">
+                <ChevronDownIcon />
+              </span>
             </button>
 
             {isProfileMenuOpen ? (
-              <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-[rgba(145,172,255,0.22)] bg-[rgba(10,17,35,0.96)] p-1.5 shadow-[0_14px_28px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+              <div className="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-[#e2e8f0] bg-white p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/4">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-[#f4f7ff] transition hover:bg-[rgba(145,172,255,0.12)]"
+                  className="block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-[#374151] transition hover:bg-[rgba(133,42,78,0.06)]"
                 >
                   Logout
                 </button>
@@ -451,30 +446,28 @@ function DashboardPage() {
         </nav>
 
         {/* Header Banner */}
-        <div className="relative mx-8 mb-6 overflow-hidden rounded-2xl border border-[rgba(145,172,255,0.15)] bg-[rgba(10,18,45,0.6)] px-8 py-4 backdrop-blur-md">
-          <div className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 h-[140px] w-[140px] rounded-full opacity-95"
-            style={{ background: "radial-gradient(circle at 35% 35%, #4db3ff 0%, #275cff 65%, transparent 100%)" }} />
-          <h1 className="mb-1 text-3xl font-bold text-[#f4f7ff]">Good to see you, {displayName}!</h1>
-          <p className="text-sm text-[#8fa3c8]">Let&apos;s ace your next interview.</p>
+        <div className="relative mx-8 mb-6 overflow-hidden rounded-2xl border border-[rgba(133,42,78,0.15)] bg-white px-8 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.05),0_12px_40px_rgba(0,0,0,0.06)] ring-1 ring-black/4">
+          <h1 className="mb-1 text-3xl font-bold text-[#0f172a]">Good to see you, {displayName}!</h1>
+          <p className="text-sm text-[#64748b]">Let&apos;s ace your next interview.</p>
         </div>
 
         {/* Main grid */}
         <div className="mx-8 mb-8 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
           {/* Left — Create New Interview */}
-          <div className="rounded-2xl border border-[rgba(145,172,255,0.18)] bg-[rgba(14,21,46,0.65)] p-5 backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
-            <div className="mb-1 flex items-center">
-              <h2 className="text-lg font-semibold text-[#f4f7ff]">Create New Interview</h2>
-              ✨
+          <div className="rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
+            <div className="mb-1 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-[#0f172a]">Create New Interview</h2>
+              <SparkleIcon />
             </div>
-            <p className="mb-4 text-xs text-[#7b90b8]">Tailor your interview experience to your goals.</p>
+            <p className="mb-4 text-xs text-[#64748b]">Tailor your interview experience to your goals.</p>
 
             <div className="grid gap-3.5">
               {/* Row 1: Role + Company */}
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1 text-xs font-semibold text-[#d7e5ff]">
+                <label className="grid gap-1 text-xs font-semibold text-[#374151]">
                   Role / Position *
                   <span className="relative">
-                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#5a7299]">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#64748b]">
                       <BriefcaseIcon />
                     </span>
                     <input
@@ -483,20 +476,20 @@ function DashboardPage() {
                       placeholder="e.g. Software Engineer"
                       value={formData.role}
                       onChange={handleChange}
-                      className={`h-10 w-full rounded-xl bg-[rgba(7,13,30,0.7)] pl-8.5 pr-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] ${
+                      className={`h-10 w-full rounded-xl bg-[#fafbff] pl-[34px] pr-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] ${
                         roleError
-                          ? "border border-[rgba(255,116,142,0.7)] focus:border-[#ff7491] focus:shadow-[0_0_0_2px_rgba(255,116,142,0.2)]"
-                          : "border border-[rgba(145,172,255,0.2)] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+                          ? "border border-[#f87171] focus:border-[#dc2626] focus:shadow-[0_0_0_3px_rgba(220,38,38,0.12)]"
+                          : "border border-[#e2e8f0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                       }`}
                     />
                   </span>
-                  {roleError ? <p className="text-[11px] font-medium text-[#ff9ca6]">{roleError}</p> : null}
+                  {roleError ? <p className="text-[11px] font-medium text-[#dc2626]">{roleError}</p> : null}
                 </label>
 
-                <label className="grid gap-1 text-xs font-semibold text-[#d7e5ff]">
+                <label className="grid gap-1 text-xs font-semibold text-[#374151]">
                   Company
                   <span className="relative">
-                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#5a7299]">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#64748b]">
                       <BuildingIcon />
                     </span>
                     <input
@@ -505,30 +498,30 @@ function DashboardPage() {
                       placeholder="e.g. Google, Microsoft (optional)"
                       value={formData.company}
                       onChange={handleChange}
-                      className="h-10 w-full rounded-xl border border-[rgba(145,172,255,0.2)] bg-[rgba(7,13,30,0.7)] pl-8.5 pr-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+                      className="h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[34px] pr-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                     />
                   </span>
                 </label>
               </div>
 
               {/* Job Description */}
-              <label className="grid gap-1 text-xs font-semibold text-[#d7e5ff]">
-                Job Description <span className="font-medium text-[#8197bb]">(Paste or type)</span>
+              <label className="grid gap-1 text-xs font-semibold text-[#374151]">
+                Job Description <span className="font-medium text-[#94a3b8]">(Paste or type)</span>
                 <textarea
                   name="jobDescription"
                   placeholder="Paste the job description here..."
                   value={formData.jobDescription}
                   onChange={handleChange}
                   rows={2}
-                  className="w-full resize-none rounded-xl border border-[rgba(145,172,255,0.2)] bg-[rgba(7,13,30,0.7)] p-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+                  className="w-full resize-none rounded-xl border border-[#e2e8f0] bg-[#fafbff] p-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
                 />
               </label>
 
               {/* Focus Areas */}
               <div>
-                <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
+                <p className="mb-2 text-xs font-medium text-[#475569]">
                   Focus Areas{" "}
-                  <span className="font-normal text-[#8197bb]">(Select all that apply)</span>
+                  <span className="font-normal text-[#94a3b8]">(Select all that apply)</span>
                 </p>
                 <div className="flex flex-wrap gap-2.5">
                   {[...FOCUS_AREAS, ...customTopics].map((area) => (
@@ -538,8 +531,8 @@ function DashboardPage() {
                       onClick={() => toggleFocus(area)}
                       className={`flex min-w-[84px] cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                         formData.focusAreas.includes(area)
-                          ? "border-[#4e8dff] bg-[rgba(78,141,255,0.18)] text-[#7ab4ff]"
-                          : "border-[rgba(145,172,255,0.18)] bg-[rgba(7,13,30,0.5)] text-[#7b90b8] hover:border-[rgba(145,172,255,0.35)]"
+                          ? "border-[#852a4e] bg-[rgba(133,42,78,0.1)] text-[#852a4e]"
+                          : "border-[#e2e8f0] bg-white text-[#64748b] hover:border-[rgba(133,42,78,0.25)]"
                       }`}
                     >
                       {formData.focusAreas.includes(area) && (
@@ -553,7 +546,7 @@ function DashboardPage() {
                   <button
                     type="button"
                     onClick={openCustomTopicModal}
-                    className="flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-[rgba(145,172,255,0.25)] px-3 py-1.5 text-xs text-[#5a7299] transition hover:border-[rgba(145,172,255,0.45)] hover:text-[#7b90b8]"
+                    className="flex cursor-pointer items-center gap-1 rounded-full border border-dashed border-[#cbd5e1] px-3 py-1.5 text-xs text-[#64748b] transition hover:border-[rgba(133,42,78,0.35)] hover:text-[#852a4e]"
                   >
                     <PlusIcon /> Add Custom Topic
                   </button>
@@ -562,8 +555,8 @@ function DashboardPage() {
 
               {/* Upload Resume */}
               <div>
-                <p className="mb-2 text-xs font-medium text-[#a0b4d6]">
-                  Upload Resume <span className="font-normal text-[#8197bb]">(Optional, PDF/DOCX)</span>
+                <p className="mb-2 text-xs font-medium text-[#475569]">
+                  Upload Resume <span className="font-normal text-[#94a3b8]">(Optional, PDF/DOCX)</span>
                 </p>
                 <div
                   role="button"
@@ -575,14 +568,14 @@ function DashboardPage() {
                       resumeInputRef.current?.click();
                     }
                   }}
-                  className="flex h-[58px] cursor-pointer items-center justify-center gap-3 rounded-xl border border-dashed border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.5)] px-4 transition hover:border-[rgba(145,172,255,0.4)]"
+                  className="flex h-[58px] cursor-pointer items-center justify-center gap-3 rounded-xl border border-dashed border-[#cbd5e1] bg-[#fafbff] px-4 text-[#64748b] transition hover:border-[rgba(133,42,78,0.3)] hover:bg-[rgba(133,42,78,0.03)]"
                 >
                   <UploadIcon />
                   <div>
-                    <p className="text-xs leading-tight text-[#9aaed0]">
+                    <p className="text-xs leading-tight text-[#475569]">
                       {resumeFileName || "Click to upload or drag and drop"}
                     </p>
-                    <p className="text-[11px] leading-tight text-[#7b90b8]">Max file size: 5MB</p>
+                    <p className="text-[11px] leading-tight text-[#94a3b8]">Max file size: 5MB</p>
                   </div>
                 </div>
                 <input
@@ -592,7 +585,7 @@ function DashboardPage() {
                   onChange={handleResumeSelect}
                   className="hidden"
                 />
-                {resumeError ? <p className="mt-2 text-xs text-[#ff9ca6]">{resumeError}</p> : null}
+                {resumeError ? <p className="mt-2 text-xs text-[#dc2626]">{resumeError}</p> : null}
               </div>
             </div>
 
@@ -601,7 +594,7 @@ function DashboardPage() {
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="mt-4 flex h-11 cursor-pointer w-full items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] text-sm font-semibold tracking-wide text-white shadow-[0_4px_20px_rgba(78,141,255,0.35)] transition hover:brightness-110 hover:shadow-[0_4px_28px_rgba(78,141,255,0.5)] disabled:cursor-not-allowed disabled:opacity-80"
+              className="mt-4 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-linear-to-r from-[#852a4e] to-[#a83d62] text-sm font-semibold tracking-wide text-white shadow-[0_4px_16px_rgba(133,42,78,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? (
                 <>
@@ -626,40 +619,40 @@ function DashboardPage() {
                 </>
               )}
             </button>
-            {submitError ? <p className="mt-2 text-xs text-[#ff9ca6]">{submitError}</p> : null}
+            {submitError ? <p className="mt-2 text-xs text-[#dc2626]">{submitError}</p> : null}
           </div>
 
           {/* Right column */}
           <div className="flex flex-col gap-5">
             {/* Your Progress */}
-            <div className="rounded-2xl border border-[rgba(145,172,255,0.18)] bg-[rgba(14,21,46,0.65)] p-6 backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
-              <h2 className="mb-4 text-base font-semibold text-[#f4f7ff]">Your Progress</h2>
+            <div className="rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
+              <h2 className="mb-4 text-base font-semibold text-[#0f172a]">Your Progress</h2>
               <div className="grid grid-cols-4 gap-3 text-center">
                 {[
-                  { icon: <CalendarIcon />, value: String(dashboardData?.totalInterviews ?? 0), label: "Interviews", color: "text-[#4e8dff]", bg: "bg-[rgba(78,141,255,0.15)]" },
-                  { icon: <CheckCircleIcon />, value: String(dashboardData?.completedInterviews ?? 0), label: "Completed", color: "text-[#a78bfa]", bg: "bg-[rgba(167,139,250,0.15)]" },
-                  { icon: <ChartIcon />, value: `${Number(dashboardData?.avgScore ?? 0).toFixed(2)}`, label: "Avg. Score", color: "text-[#34d399]", bg: "bg-[rgba(52,211,153,0.15)]" },
-                  { icon: <ClockIcon />, value: String(incompleteCount), label: "Incomplete", color: "text-[#fb923c]", bg: "bg-[rgba(251,146,60,0.15)]" },
+                  { icon: <CalendarIcon />, value: String(dashboardData?.totalInterviews ?? 0), label: "Interviews", color: "text-[#852a4e]", bg: "bg-[rgba(133,42,78,0.12)]" },
+                  { icon: <CheckCircleIcon />, value: String(dashboardData?.completedInterviews ?? 0), label: "Completed", color: "text-[#15803d]", bg: "bg-[rgba(22,163,74,0.12)]" },
+                  { icon: <ChartIcon />, value: `${Number(dashboardData?.avgScore ?? 0).toFixed(2)}`, label: "Avg. Score", color: "text-[#0f766e]", bg: "bg-[rgba(20,184,166,0.14)]" },
+                  { icon: <ClockIcon />, value: String(incompleteCount), label: "Incomplete", color: "text-[#c2410c]", bg: "bg-[rgba(251,146,60,0.15)]" },
                 ].map(({ icon, value, label, color, bg }) => (
                   <div key={label} className="flex flex-col items-center gap-2">
                     <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${color}`}>
                       {icon}
                     </div>
-                    <p className="text-xl font-bold text-[#f4f7ff]">{value}</p>
-                    <p className="text-[11px] leading-tight text-[#6b7fa3]">{label}</p>
+                    <p className="text-xl font-bold text-[#0f172a]">{value}</p>
+                    <p className="text-[11px] leading-tight text-[#64748b]">{label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Recent Interviews */}
-            <div className="rounded-2xl border border-[rgba(145,172,255,0.18)] bg-[rgba(14,21,46,0.65)] p-6 backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.4)]">
+            <div className="rounded-2xl border border-[rgba(133,42,78,0.2)] bg-white p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-base font-semibold text-[#f4f7ff]">Recent Interviews</h2>
+                <h2 className="text-base font-semibold text-[#0f172a]">Recent Interviews</h2>
                 <button
                   type="button"
                   onClick={() => navigate("/interviews")}
-                  className="cursor-pointer text-xs font-medium text-[#4e8dff] transition hover:text-[#7ab4ff]"
+                  className="cursor-pointer text-xs font-semibold text-[#852a4e] transition hover:text-[#6b2240]"
                 >
                   View All
                 </button>
@@ -670,25 +663,25 @@ function DashboardPage() {
                   <div
                     key={item.id}
                     onClick={() => navigate(getInterviewNavigationPath(item))}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-[rgba(145,172,255,0.1)] bg-[rgba(7,13,30,0.45)] px-4 py-3 transition hover:border-[rgba(145,172,255,0.25)] hover:bg-[rgba(7,13,30,0.65)]"
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:border-[rgba(133,42,78,0.22)] hover:bg-white hover:shadow-[0_4px_14px_rgba(0,0,0,0.06)]"
                   >
                     {/* Company logo */}
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(78,141,255,0.2)] text-sm font-bold text-[#9ec3ff]">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(133,42,78,0.12)] text-sm font-bold text-[#852a4e]">
                       {String(item.role || "?").charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-[#f4f7ff]">{item.role}</p>
-                      <p className="text-[11px] text-[#5a7299]">{new Date(item.createdAt).toLocaleDateString()}</p>
+                      <p className="truncate text-sm font-medium text-[#0f172a]">{item.role}</p>
+                      <p className="text-[11px] text-[#64748b]">{new Date(item.createdAt).toLocaleDateString()}</p>
                     </div>
 
                     {/* Score */}
                     <div className="shrink-0 text-right">
-                      <p className="text-sm font-semibold text-[#f4f7ff]">
+                      <p className="text-sm font-semibold text-[#0f172a]">
                         {item.score === null || item.score === undefined ? "—" : Number(item.score).toFixed(2)}
                       </p>
-                      <p className="text-[11px] text-[#5a7299]">Score</p>
+                      <p className="text-[11px] text-[#64748b]">Score</p>
                     </div>
 
                     {/* Status badge */}
@@ -697,7 +690,7 @@ function DashboardPage() {
                     </div>
 
                     {/* Arrow */}
-                    <div className="shrink-0 text-[#3a4d6a]">
+                    <div className="shrink-0 text-[#94a3b8]">
                       <ChevronRightIcon />
                     </div>
                   </div>
@@ -709,12 +702,12 @@ function DashboardPage() {
       </div>
 
       {isCustomTopicModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02040b]/70 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-[rgba(145,172,255,0.2)] bg-[rgba(10,17,35,0.98)] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.5)]">
-            <h3 className="text-lg font-semibold text-[#f4f7ff]">Add Custom Topic</h3>
-            <p className="mt-1 text-xs text-[#8fa3c8]">Create a focus area and add it as a selectable chip.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/40 px-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-2xl border border-[rgba(133,42,78,0.18)] bg-white p-5 shadow-[0_24px_64px_rgba(0,0,0,0.15)] ring-1 ring-black/4">
+            <h3 className="text-lg font-semibold text-[#0f172a]">Add Custom Topic</h3>
+            <p className="mt-1 text-xs text-[#64748b]">Create a focus area and add it as a selectable chip.</p>
 
-            <label className="mt-4 grid gap-1 text-xs font-semibold text-[#d7e5ff]">
+            <label className="mt-4 grid gap-1 text-xs font-semibold text-[#374151]">
               Topic Name
               <input
                 type="text"
@@ -724,23 +717,23 @@ function DashboardPage() {
                   if (customTopicError) setCustomTopicError("");
                 }}
                 placeholder="e.g. Distributed Systems"
-                className="h-10 w-full rounded-xl border border-[rgba(145,172,255,0.2)] bg-[rgba(7,13,30,0.7)] px-3 text-sm text-[#f2f5ff] outline-none transition placeholder:text-[#6e7f9b] focus:border-[#4e8dff] focus:shadow-[0_0_0_2px_rgba(78,141,255,0.18)]"
+                className="h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] px-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
               />
             </label>
-            {customTopicError ? <p className="mt-2 text-xs text-[#ff9ca6]">{customTopicError}</p> : null}
+            {customTopicError ? <p className="mt-2 text-xs text-[#dc2626]">{customTopicError}</p> : null}
 
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={closeCustomTopicModal}
-                className="h-9 rounded-lg border cursor-pointer border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.45)] px-3 text-xs font-medium text-[#c8d8f8] transition hover:border-[rgba(145,172,255,0.45)]"
+                className="h-9 cursor-pointer rounded-lg border border-[#e2e8f0] bg-white px-3 text-xs font-medium text-[#374151] transition hover:border-[#cbd5e1] hover:bg-[#f8fafc]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleAddCustomTopic}
-                className="h-9 rounded-lg bg-linear-to-r cursor-pointer from-[#2f80ff] to-[#5b33ff] px-3 text-xs font-semibold text-white transition hover:brightness-110"
+                className="h-9 cursor-pointer rounded-lg bg-linear-to-r from-[#852a4e] to-[#a83d62] px-3 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(133,42,78,0.25)] transition hover:brightness-105"
               >
                 Add Topic
               </button>

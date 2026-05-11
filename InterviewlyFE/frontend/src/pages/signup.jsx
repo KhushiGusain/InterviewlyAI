@@ -63,132 +63,129 @@ function SignupPage() {
   }
 
   return (
-    <main className="relative h-screen overflow-hidden bg-[radial-gradient(circle_at_20%_10%,#0f245f_0%,#050918_45%,#03050f_100%)] py-4 text-[#f4f7ff] sm:py-5">
-      <div className="absolute right-[8%] top-[9%] h-[260px] w-[260px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#4db3ff_0%,#275cff_65%,transparent_100%)] opacity-95 blur-[2px]" />
-      <div className="absolute bottom-[10%] right-[4%] h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#61c6ff_0%,#315dff_60%,transparent_100%)] opacity-95 blur-[2px]" />
-      <div className="absolute bottom-[24%] left-[48%] h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#55a2ff_0%,#253fce_65%,transparent_100%)] opacity-95 blur-[2px]" />
+    <main className="relative h-screen overflow-hidden bg-white py-4 text-[#1e293b] sm:py-5">
+      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,0,0,0.07)_1px,transparent_1px)] bg-size-[26px_26px]" />
 
       <div className="relative z-10 flex h-full w-full flex-col">
         <NavbarBrand />
 
         <section className="mx-auto grid min-h-0 w-full max-w-[1180px] flex-1 items-start gap-5 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <LandingHeroPanel />
+          <LandingHeroPanel />
 
-        <section
-          className="w-full max-w-[470px] justify-self-end self-start rounded-3xl border border-[rgba(145,172,255,0.24)] bg-[rgba(16,24,46,0.62)] p-7 shadow-[0_18px_50px_rgba(0,0,0,0.4)] backdrop-blur-xl"
-          aria-label="Create account form"
-        >
-          <h2 className="mb-5 text-center text-[2rem] font-medium tracking-[0.08em]">
-            SIGN UP
-          </h2>
-          <form className="grid gap-3.5" onSubmit={handleSignupSubmit}>
-            <label className="grid gap-1.5 text-sm text-[#dce6ff]">
-              Full Name
-              <span className="relative">
-                <img
-                  src={userIcon}
-                  alt=""
-                  className="pointer-events-none absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2"
-                />
-                <input
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                  className="h-11 w-full rounded-xl border border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.7)] pl-[42px] pr-4 text-[#f2f5ff] outline-none transition placeholder:text-[#8f9bbf] focus:border-[#568cff] focus:shadow-[0_0_0_3px_rgba(86,140,255,0.2)]"
-                />
-              </span>
-            </label>
-
-            <label className="grid gap-1.5 text-sm text-[#dce6ff]">
-              Email Address
-              <span className="relative">
-                <img
-                  src={emailIcon}
-                  alt=""
-                  className="pointer-events-none absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2"
-                />
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                  className="h-11 w-full rounded-xl border border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.7)] pl-[42px] pr-4 text-[#f2f5ff] outline-none transition placeholder:text-[#8f9bbf] focus:border-[#568cff] focus:shadow-[0_0_0_3px_rgba(86,140,255,0.2)]"
-                />
-              </span>
-            </label>
-
-            <label className="grid gap-1.5 text-sm text-[#dce6ff]">
-              Password
-              <span className="relative">
-                <img
-                  src={lockIcon}
-                  alt=""
-                  className="pointer-events-none absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2"
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  className="h-11 w-full rounded-xl border border-[rgba(145,172,255,0.25)] bg-[rgba(7,13,30,0.7)] pl-[42px] pr-10 text-[#f2f5ff] outline-none transition placeholder:text-[#8f9bbf] focus:border-[#568cff] focus:shadow-[0_0_0_3px_rgba(86,140,255,0.2)]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
-                >
+          <section
+            className="w-full max-w-[470px] justify-self-end self-start rounded-3xl border border-[rgba(133,42,78,0.2)] bg-white p-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.1),0_40px_100px_rgba(0,0,0,0.08)] ring-1 ring-black/4"
+            aria-label="Create account form"
+          >
+            <h2 className="mb-5 text-center text-[2rem] font-medium tracking-[0.08em] text-[#0f172a]">
+              SIGN UP
+            </h2>
+            <form className="grid gap-3.5" onSubmit={handleSignupSubmit}>
+              <label className="grid gap-1.5 text-sm font-medium text-[#374151]">
+                Full Name
+                <span className="relative">
                   <img
-                    src={showPassword ? openEyeIcon : closeEyeIcon}
-                    alt={showPassword ? "Hide password" : "Show password"}
-                    className="h-5 w-5"
+                    src={userIcon}
+                    alt=""
+                    className="pointer-events-none absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 brightness-0 opacity-35"
                   />
-                </button>
-              </span>
-            </label>
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    required
+                    className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-4 text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                  />
+                </span>
+              </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-1 flex h-[46px] w-full items-center justify-center rounded-xl border-0 bg-linear-to-r from-[#2f80ff] to-[#5b33ff] font-bold tracking-[0.02em] text-[#f5f7ff] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-80"
-            >
-              {loading ? (
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5 animate-spin"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <circle cx="12" cy="12" r="9" className="opacity-30" />
-                  <path d="M21 12a9 9 0 0 0-9-9" className="opacity-100" />
-                </svg>
-              ) : (
-                "CREATE ACCOUNT"
-              )}
-            </button>
-          </form>
+              <label className="grid gap-1.5 text-sm font-medium text-[#374151]">
+                Email Address
+                <span className="relative">
+                  <img
+                    src={emailIcon}
+                    alt=""
+                    className="pointer-events-none absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 brightness-0 opacity-35"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                    className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-4 text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                  />
+                </span>
+              </label>
 
-          {error ? (
-            <p className="mt-3 text-sm text-[#ff9ca6]">{error}</p>
-          ) : null}
-          <div className="my-4 flex items-center gap-3">
-            <span className="h-px flex-1 bg-[rgba(154,170,214,0.25)]" />
-            <span className="text-xs text-[#9ea8c7]">OR</span>
-            <span className="h-px flex-1 bg-[rgba(154,170,214,0.25)]" />
-          </div>
+              <label className="grid gap-1.5 text-sm font-medium text-[#374151]">
+                Password
+                <span className="relative">
+                  <img
+                    src={lockIcon}
+                    alt=""
+                    className="pointer-events-none absolute left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 brightness-0 opacity-35"
+                  />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                    className="h-11 w-full rounded-xl border border-[#e2e8f0] bg-[#fafbff] pl-[42px] pr-10 text-[#0f172a] outline-none transition placeholder:text-[#a0aec0] focus:border-[#852a4e] focus:shadow-[0_0_0_3px_rgba(133,42,78,0.12)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer opacity-50 transition hover:opacity-80"
+                  >
+                    <img
+                      src={showPassword ? openEyeIcon : closeEyeIcon}
+                      alt={showPassword ? "Hide password" : "Show password"}
+                      className="h-5 w-5 brightness-0"
+                    />
+                  </button>
+                </span>
+              </label>
 
-          <p className="text-center text-[#b4bddb]">
-            Already have an account?{" "}
-            <Link to="/login" className="text-[#6da6ff] no-underline">
-              Login
-            </Link>
-          </p>
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-1 flex h-[46px] w-full cursor-pointer items-center justify-center rounded-xl border-0 bg-linear-to-r from-[#852a4e] to-[#a83d62] font-bold tracking-[0.02em] text-white shadow-[0_4px_16px_rgba(133,42,78,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {loading ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <circle cx="12" cy="12" r="9" className="opacity-30" />
+                    <path d="M21 12a9 9 0 0 0-9-9" className="opacity-100" />
+                  </svg>
+                ) : (
+                  "CREATE ACCOUNT"
+                )}
+              </button>
+            </form>
+
+            {error ? <p className="mt-3 text-sm text-[#dc2626]">{error}</p> : null}
+
+            <div className="my-4 flex items-center gap-3">
+              <span className="h-px flex-1 bg-[#e2e8f0]" />
+              <span className="text-xs text-[#94a3b8]">OR</span>
+              <span className="h-px flex-1 bg-[#e2e8f0]" />
+            </div>
+
+            <p className="text-center text-[#64748b]">
+              Already have an account?{" "}
+              <Link to="/login" className="font-semibold text-[#852a4e] no-underline transition hover:text-[#6b2240]">
+                Login
+              </Link>
+            </p>
+          </section>
         </section>
-      </section>
       </div>
     </main>
   );
